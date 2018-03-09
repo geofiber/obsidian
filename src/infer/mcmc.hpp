@@ -58,6 +58,8 @@ namespace stateline
             acceptRates_(s.stacks * s.chains),
             swapRates_(s.stacks * s.chains),
             lowestEnergies_(s.stacks * s.chains),
+            chainmean_(s.stacks * s.chains),
+            chaincov_(s.stacks * s.chains),
             s_(s),
             recover_(d.recover),
             numOutstandingJobs_(0),
@@ -119,6 +121,16 @@ namespace stateline
         // Initialise the convergence criteria
         uint stateDim = initialStates[0].size();
         EpsrConvergenceCriteria cc(chains_.numStacks(), stateDim);
+
+        // RS 2018/03/09:  Initialize the chain means and covariances.
+        for (uint i = 0; i < chains_.numTotalChains(); i++)
+        {
+          chainmean_[i] = Eigen::VectorXd(stateDim);
+          chaincov_[i] = Eigen::MatrixXd(stateDim, stateDim);
+          chainmean_[i].setZero(stateDim);
+          chaincov_[i].setIdentity(stateDim, stateDim);
+          chaincov_[i] *= 1e-6;
+        }
 
         // Listen for replies. As soon as a new state comes back,
         // add it to the corresponding chain, and submit a new proposed state
@@ -212,6 +224,9 @@ namespace stateline
           {
             adaptBeta(id);
           }
+
+          // RS 2018/03/09:  Update the chain covariance.
+          updateChaincov();
 
           // Update the accept and swap rates
           if (duration_cast<milliseconds>(steady_clock::now() - lastLogTime).count() > 50)
@@ -309,6 +324,16 @@ namespace stateline
     const ChainArray &chains() const
     {
       return chains_;
+    }
+
+    //! RS 2018/03/09:  Get the parameter covariance of MCMC chain id.
+    //! Relevant mostly for multivariate adaptive Metropolis proposals.
+    //!
+    //! \return A const reference to the chain covariance.
+    //!
+    const Eigen::MatrixXd &chaincov(uint id) const
+    {
+      return chaincov_[id];
     }
 
   private:
@@ -445,6 +470,30 @@ namespace stateline
       }
     }
 
+    //! RS 2018/03/09:  Update the chain covariances.
+    //!
+    //! \param id The id of the chain to be updated.
+    //!
+    void updateChaincov(uint id)
+    {
+      uint t = chains_[id].length();
+      if (t > 1)
+      {
+        // Declare a few elements to make this easier
+        Eigen::VectorXd SXm = (t-1)*chainmean_[id];
+        Eigen::MatrixXd SX2m = (t-2)*chaincov_[id] + SXm*SXm.transpose();
+        Eigen::VectorXd Xt = chains.state(id, t-1).sample;
+
+        // Update mean
+        chainmean_[id] = ((t - 1)*SXm + Xt)/((double) t);
+
+        // Update covariance
+        chaincov_[id] = (SX2m + Xt*Xt.transpose() -
+                         t*chainmean_[id]*chainmean_[id].transpose())
+                        / ((double) t-1);
+      }
+    }
+
     void updateAccepts(uint id, bool acc)
     {
       uint oldSize = acceptBuffers_[id].size();
@@ -506,6 +555,10 @@ namespace stateline
 
     // Matrix of proposed states
     Eigen::MatrixXd propStates_;
+
+    // RS 2018/03/09:  Accumulated chain mean and covariance.
+    std::vector<Eigen::MatrixXd> chaincov_;
+    std::vector<Eigen::VectorXd> chainmean_;
 
     // Whether a chain is locked. A locked chain will wait for any outstanding
     // job results and propagate the lock.
