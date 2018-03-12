@@ -13,6 +13,7 @@
 #include <random>
 #include <functional>
 #include <Eigen/Core>
+#include "distrib/multigaussian.hpp"
 
 namespace stateline
 {
@@ -69,12 +70,13 @@ namespace stateline
     //! 
     //! \param state The current state of the chain
     //! \param sigma The standard deviation of the distribution (step size of the proposal)
+    //! \param qcov Dummy parameter added by RS 2018/03/09 to match calling structure
     //! \param min The minimum bound of theta 
     //! \param max The maximum bound of theta 
     //! \returns The new proposed theta
     //!
     Eigen::VectorXd adaptiveGaussianProposal(const Eigen::VectorXd &state, double sigma, 
-        const Eigen::VectorXd& min, const Eigen::VectorXd& max)
+        const Eigen::MatrixXd& qcov, const Eigen::VectorXd& min, const Eigen::VectorXd& max)
     {
       // Random number generators
       static std::random_device rd;
@@ -89,6 +91,32 @@ namespace stateline
       return bouncyBounds(proposal, min, max);
     };
     
+    //! RS 2018/03/09:  A multivariate Gaussian proposal function.
+    //! It turns out random walk proposals made from a Gaussian with correlated
+    //! components won't satisfy detailed balance if made across a reflection
+    //! boundary, so it's important that we NOT do this, and instead just set
+    //! the world prior probability to zero in order to auto-reject the state.
+    //!
+    //! \param state The current state of the chain
+    //! \param sigma Scaling parameter (step size) to apply to chain covariance
+    //! \param qcov Covariance of a multivariate Gaussian with ~unit diagonal
+    //! \param min The minimum bound of theta 
+    //! \param max The maximum bound of theta 
+    //! \returns The new proposed theta
+    //!
+    Eigen::VectorXd multiGaussianProposal(const Eigen::VectorXd &state, double sigma, 
+        const Eigen::MatrixXd& qcov, const Eigen::VectorXd& min, const Eigen::VectorXd& max)
+    {
+      // Random number generators
+      static std::random_device rd;
+      static std::mt19937 generator(rd());
+      static std::normal_distribution<> rand; // Standard normal
+
+      // Draw from a multivariate Gaussian
+      Eigen::VectorXd zero_mean = 0.0*state;
+      distrib::MultiGaussian q(zero_mean, qcov);
+      return state + sigma*distrib::drawValues(q, generator);
+    };
     
   }
 }

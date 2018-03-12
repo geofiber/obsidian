@@ -649,6 +649,11 @@ def write_config(lng, lat, L, maxdepth, layers, H_IGRF,
         "# The number of states appended to the chain between adaptions of sigma\n"
         "adaptInterval = 250\n"
         "\n"
+        "# Number of samples after which to start sampling from an adaptive Metropolis\n"
+        "# scheme, which uses the covariance of past samples to inform a multivariate\n"
+        "# Gaussian random walk.  Set to zero to disable adaptive Metropolis proposals.\n"
+        "adaptAMLength = 0\n"
+        "\n"
         "\n")
 
     # Finally, write the string to disk!

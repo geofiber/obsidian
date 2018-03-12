@@ -141,6 +141,12 @@ namespace stateline
 
     //! The initial temperature ladder factor.
     double initialTempFactor;
+
+    //! RS 2018/03/12:  Number of samples after which to start sampling from
+    //! the "adaptive Metropolis" scheme, which uses the covariance of past
+    //! samples to inform a multivariate Gaussian random walk.  Set to zero
+    //! to disable adaptive Metropolis proposals.
+    uint adaptAMLength;
   };
 
 }

@@ -24,6 +24,7 @@
 #include "app/settings.hpp"
 #include "infer/chainarray.hpp"
 #include "infer/diagnostics.hpp"
+#include "infer/adaptive.hpp"
 #include "comms/transport.hpp"
 
 namespace stateline
@@ -128,8 +129,7 @@ namespace stateline
           chainmean_[i] = Eigen::VectorXd(stateDim);
           chaincov_[i] = Eigen::MatrixXd(stateDim, stateDim);
           chainmean_[i].setZero(stateDim);
-          chaincov_[i].setIdentity(stateDim, stateDim);
-          chaincov_[i] *= 1e-6;
+          chaincov_[i].setZero(stateDim, stateDim);
         }
 
         // Listen for replies. As soon as a new state comes back,
@@ -210,6 +210,9 @@ namespace stateline
           // Log the best energy state so far
           lowestEnergies_[id] = std::min(lowestEnergies_[id], chains_.lastState(id).energy);
 
+          // RS 2018/03/09:  Update the chain covariance.
+          updateChaincov(id);
+
           // Check if we need to adapt the step size for this chain
           if (lengths_[id] % s_.proposalAdaptInterval == 0)
           {
@@ -224,9 +227,6 @@ namespace stateline
           {
             adaptBeta(id);
           }
-
-          // RS 2018/03/09:  Update the chain covariance.
-          updateChaincov();
 
           // Update the accept and swap rates
           if (duration_cast<milliseconds>(steady_clock::now() - lastLogTime).count() > 50)
@@ -374,7 +374,13 @@ namespace stateline
     template <class AsyncPolicy, class PropFn>
     void propose(AsyncPolicy &policy, uint id, PropFn &propFn)
     {
-      propStates_.row(id) = propFn(chains_.lastState(id).sample, chains_.sigma(id));
+      //! RS 2018/03/12:  If we're doing adaptive Metropolis, change over
+      //! to the AM proposal function if we've got at least some target
+      //! number of samples in this chain.
+      uint amL = s_.adaptAMLength;
+      PropFn& adapt_propFn = ((amL > 0 && amL < chains_[id].length())
+              ? propFn : std::bind(&multiGaussianProposal, ph::_1, ph::_2, 0.0, 0.0));
+      propStates_.row(id) = adapt_propFn(chains_.lastState(id).sample, chains_.sigma(id));
       policy.submit(id, propStates_.row(id));
       numOutstandingJobs_++;
     }
@@ -476,21 +482,23 @@ namespace stateline
     //!
     void updateChaincov(uint id)
     {
-      uint t = chains_[id].length();
-      if (t > 1)
+      uint k = chains_[id].length();
+      if (k > 1)
       {
         // Declare a few elements to make this easier
-        Eigen::VectorXd SXm = (t-1)*chainmean_[id];
-        Eigen::MatrixXd SX2m = (t-2)*chaincov_[id] + SXm*SXm.transpose();
-        Eigen::VectorXd Xt = chains.state(id, t-1).sample;
+        Eigen::VectorXd Xk = chains.state(id, k-1).sample;
+        int n = Xk.size();
+        Eigen::MatrixXd eid = 1.0e-10*Eigen::MatrixXd::Identity(n, n);
+        Eigen::VectorXd SXm = (k-1)*chainmean_[id];
+        Eigen::MatrixXd SX2m = (k-2)*(chaincov_[id] - eid) + (k-1)*SXm*SXm.transpose();
 
-        // Update mean
-        chainmean_[id] = ((t - 1)*SXm + Xt)/((double) t);
+        // Update SXm and SX2m
+        SXm += Xk;
+        SX2m += Xk*Xk.transpose():
 
-        // Update covariance
-        chaincov_[id] = (SX2m + Xt*Xt.transpose() -
-                         t*chainmean_[id]*chainmean_[id].transpose())
-                        / ((double) t-1);
+        // Update mean and covariance
+        chainmean_[id] = SXm/(1.0*k);
+        chaincov_[id] = (SX2m - SXm*SXm.transpose()/(1.0*k))/(1.0*k) + eid;
       }
     }
 

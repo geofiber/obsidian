@@ -60,6 +60,7 @@ namespace obsidian
   s.betaAdaptInterval = vm["mcmc.betaAdaptInterval"].as<uint>();
   s.adaptionLength = vm["mcmc.adaptionLength"].as<uint>();
   s.cacheLength = vm["mcmc.cacheLength"].as<uint>();
+  s.adaptAMLength = vm["mcmc.adaptAMLength"].as<uint>();
   return s;
 }
 }
