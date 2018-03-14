@@ -86,7 +86,8 @@ namespace stateline
       for (int i = 0; i < proposal.rows(); i++)
         proposal(i) = state(i) + rand(generator) * sigma;
 
-      return bouncyBounds(proposal, min, max);
+      //return bouncyBounds(proposal, min, max);
+      return proposal
     };
     
     

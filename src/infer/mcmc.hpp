@@ -89,10 +89,11 @@ namespace stateline
       //! \param policy Async policy to evaluate states.
       //! \param initialStates Initial chain states. Ignored if recovering.
       //! \param propFn The proposal function.
+      //! \param propPDFFn The proposal PDF function.
       //! \param numSeconds The number of seconds to run the MCMC for.
       //!
-      template<class AsyncPolicy, class PropFn>
-      void run(AsyncPolicy &policy, const std::vector<Eigen::VectorXd>& initialStates, PropFn &propFn, uint numSeconds)
+      template<class AsyncPolicy, class PropFn, class PropPDFFn>
+      void run(AsyncPolicy &policy, const std::vector<Eigen::VectorXd>& initialStates, PropFn &propFn, PropPdfFn &propPdfFn, uint numSeconds)
       {
         using namespace std::chrono;
 
@@ -151,7 +152,8 @@ namespace stateline
           bool isColdestChainInStack = id % chains_.numChains() == 0;
 
           // Handle the new proposal and add a new state to the chain
-          State propState { propStates_.row(id), energy, chains_.beta(id), false, SwapType::NoAttempt };
+          double logDensity = propPdfFn(propStates_.row(id));
+          State propState { propStates_.row(id), energy, logDensity, chains_.beta(id), false, SwapType::NoAttempt };
           bool propAccepted = chains_.append(id, propState);
           lengths_[id] += 1;
           updateAccepts(id, propAccepted);
