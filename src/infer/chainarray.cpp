@@ -265,10 +265,12 @@ namespace stateline
         state1.energy = state2.energy;
         state1.accepted = state2.accepted;
         state1.swapType = SwapType::Accept;
+        state1.logDensity = State2.logDensity;
         state2.sample = tempState.sample;
         state2.energy = tempState.energy;
         state2.accepted = tempState.accepted;
         state2.swapType = SwapType::Accept;
+        state2.logDensity = tempState.logDensity;
       } else
       {
         state1.swapType = SwapType::Reject;
