@@ -141,9 +141,7 @@ int main(int ac, char* av[])
   Eigen::MatrixXd Mu = MatrixXd::Zero(prior.size());
   Eigen::MatrixXd Sigma = MatrixXd::Identity(prior.size());
   distrib::MultiGaussian gauss(Mu, Sigma);
-  mins = XXX;
-  maxs = YYY;
-  auto proposalPDFFn = distrib::logPDF(ph::_1, gauss, mins, maxs);
+  auto proposalPDFFn = distrib::logPDF(ph::_1, gauss, rior.world.thetaMinBound(), prior.world.thetaMaxBound());
 
   auto proposal = std::bind(&mcmc::adaptiveGaussianProposal,ph::_1, ph::_2,
                             prior.world.thetaMinBound(), prior.world.thetaMaxBound());
