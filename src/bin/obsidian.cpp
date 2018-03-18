@@ -138,11 +138,15 @@ int main(int ac, char* av[])
   }
 
   // hard code the proposalPDFFn here but the proposal function should really be specified in the config file in the future
-  Eigen::MatrixXd Mu = MatrixXd::Zero(prior.size());
-  Eigen::MatrixXd Sigma = MatrixXd::Identity(prior.size());
+  Eigen::MatrixXd Mu = Eigen::VectorXd::Zero(prior.size());
+  Eigen::MatrixXd Sigma = Eigen::MatrixXd::Identity(prior.size(), prior.size());
   distrib::MultiGaussian gauss(Mu, Sigma);
-  auto proposalPDFFn = distrib::logPDF(ph::_1, gauss, rior.world.thetaMinBound(), prior.world.thetaMaxBound());
-
+  // testing1
+  //void (*foo)(double);
+  //foo = &distrib::logPDF;
+  // testing2
+  //double (obsidian::distrib::*foo)(const Eigen::VectorXd&, const distrib::MultiGaussian&, const Eigen::VectorXd&, const Eigen::VectorXd&) = &obsidian::distrib::logPDF;
+  auto proposalPDFFn = std::bind(&distrib::logPDF, ph::_1, gauss, prior.world.thetaMinBound(), prior.world.thetaMaxBound());
   auto proposal = std::bind(&mcmc::adaptiveGaussianProposal,ph::_1, ph::_2,
                             prior.world.thetaMinBound(), prior.world.thetaMaxBound());
   mcmc.run(policy, initialThetas, proposal, proposalPDFFn, mcmcSettings.wallTime);
