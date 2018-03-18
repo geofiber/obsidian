@@ -92,7 +92,7 @@ namespace stateline
       //! \param propPDFFn The proposal PDF function.
       //! \param numSeconds The number of seconds to run the MCMC for.
       //!
-      template<class AsyncPolicy, class PropFn, class PropPDFFn>
+      template<class AsyncPolicy, class PropFn, class PropPdfFn>
       void run(AsyncPolicy &policy, const std::vector<Eigen::VectorXd>& initialStates, PropFn &propFn, PropPdfFn &propPdfFn, uint numSeconds)
       {
         using namespace std::chrono;
