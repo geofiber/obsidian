@@ -138,6 +138,7 @@ int main(int ac, char* av[])
     }
   }
 
+  LOG(INFO) << "initial samples generated" << val1;
   // hard code the proposalPDFFn here but the proposal function should really be specified in the config file in the future
   Eigen::MatrixXd Mu = Eigen::VectorXd::Zero(prior.size());
   Eigen::MatrixXd Sigma = Eigen::MatrixXd::Identity(prior.size(), prior.size());
