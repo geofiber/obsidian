@@ -107,7 +107,7 @@ namespace stateline
         // Initialise the chains if we're not recovering
         if (!recover_)
         {
-          initialise(policy, initialStates);
+          initialise(policy, initialStates, propPdfFn);
         }
 
         // Start all the chains from hottest to coldest
@@ -153,6 +153,7 @@ namespace stateline
 
           // Handle the new proposal and add a new state to the chain
           double logDensity = propPdfFn(propStates_.row(id));
+          LOG(INFO)<< "logDensity: " << logDensity << "\n";
           State propState { propStates_.row(id), energy, logDensity, chains_.beta(id), false, SwapType::NoAttempt };
           bool propAccepted = chains_.append(id, propState);
           lengths_[id] += 1;
@@ -266,7 +267,8 @@ namespace stateline
             auto result = policy.retrieve();
             uint id = result.first;
             double energy = result.second;
-            State propState { propStates_.row(id), energy, chains_.beta(id), false, SwapType::NoAttempt };
+	    double logDensity = propPdfFn(propStates_.row(id));
+            State propState { propStates_.row(id), energy, logDensity, chains_.beta(id), false, SwapType::NoAttempt };
             bool propAccepted = chains_.append(id, propState);
             lengths_[id] += 1;
             updateAccepts(id, propAccepted);
@@ -320,8 +322,8 @@ namespace stateline
     //! \param policy Async policy to evaluate states.
     //! \param initialStates A list containing the initial states of the chains.
     //!
-    template <class AsyncPolicy>
-    void initialise(AsyncPolicy &policy, const std::vector<Eigen::VectorXd>& initialStates)
+    template <class AsyncPolicy, class LogDensityFn>
+    void initialise(AsyncPolicy &policy, const std::vector<Eigen::VectorXd>& initialStates, LogDensityFn &fn)
     {
       // Evaluate the initial states of the chains
       for (uint i = 0; i < chains_.numTotalChains(); i++)
@@ -336,8 +338,9 @@ namespace stateline
         auto result = policy.retrieve();
         uint id = result.first;
         double energy = result.second;
+        double logDensity = fn(propStates_.row(id));
         State s
-        { initialStates[id], energy, chains_.beta(id), true, SwapType::NoAttempt};
+        { initialStates[id], energy, logDensity, chains_.beta(id), true, SwapType::NoAttempt};
         chains_.initialise(id, s);
       }
     }

@@ -15,6 +15,7 @@
 #include <thread>
 #include <chrono>
 #include <numeric>
+#include <iostream>
 // Prerequisites
 #include <glog/logging.h>
 #include <boost/program_options.hpp>
@@ -140,15 +141,21 @@ int main(int ac, char* av[])
   // hard code the proposalPDFFn here but the proposal function should really be specified in the config file in the future
   Eigen::MatrixXd Mu = Eigen::VectorXd::Zero(prior.size());
   Eigen::MatrixXd Sigma = Eigen::MatrixXd::Identity(prior.size(), prior.size());
+  // theta is for testing purposes below
+  Eigen::MatrixXd theta = Eigen::VectorXd::Ones(prior.size());
   distrib::MultiGaussian gauss(Mu, Sigma);
-  // testing1
-  //void (*foo)(double);
-  //foo = &distrib::logPDF;
-  // testing2
-  //double (obsidian::distrib::*foo)(const Eigen::VectorXd&, const distrib::MultiGaussian&, const Eigen::VectorXd&, const Eigen::VectorXd&) = &obsidian::distrib::logPDF;
-  auto proposalPDFFn = std::bind(&distrib::logPDF, ph::_1, gauss, prior.world.thetaMinBound(), prior.world.thetaMaxBound());
+  double (*pFn)(const Eigen::VectorXd&, const distrib::MultiGaussian&, const Eigen::VectorXd&, const Eigen::VectorXd&) = &obsidian::distrib::logPDF;
+  // test1. testing if pFn works
+  double val1 = pFn(theta, gauss, prior.world.thetaMinBound(), prior.world.thetaMaxBound());
+  LOG(INFO) << "val1: " << val1;
+  //double val2 = (*pFn)(theta, gauss, prior.world.thetaMinBound(), prior.world.thetaMaxBound());
+  //std::cout << "val2: " << val1;
+  auto proposalPDFFn = std::bind(pFn, ph::_1, gauss, prior.world.thetaMinBound(), prior.world.thetaMaxBound());
   auto proposal = std::bind(&mcmc::adaptiveGaussianProposal,ph::_1, ph::_2,
                             prior.world.thetaMinBound(), prior.world.thetaMaxBound());
+  // test2. testing if proposalPDFFn works
+  double val3 = proposalPDFFn(theta);
+  LOG(INFO) << "val3: " << val3;
   mcmc.run(policy, initialThetas, proposal, proposalPDFFn, mcmcSettings.wallTime);
 
   // This will gracefully stop all delegators internal threads
