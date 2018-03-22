@@ -49,6 +49,7 @@ namespace obsidian
     s.insert(ForwardModel::SEISMIC1D);
     s.insert(ForwardModel::CONTACTPOINT);
     s.insert(ForwardModel::THERMAL);
+    s.insert(ForwardModel::FIELDOBS);
     po::options_description options;
     initOptions(options);
     std::string prefix = "test_" + configHeading;

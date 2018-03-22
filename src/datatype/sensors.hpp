@@ -41,6 +41,10 @@ namespace obsidian
     {
       X<ForwardModel::THERMAL>(p...);
     }
+    if (enabled.count(ForwardModel::FIELDOBS))
+    {
+      X<ForwardModel::FIELDOBS>(p...);
+    }
   }
   template<template<ForwardModel f> class X, typename ... P>
   void applyToSensors(P ... p)
