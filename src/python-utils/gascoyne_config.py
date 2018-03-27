@@ -126,16 +126,17 @@ def convert_ground_truth(fname):
     """
     fieldcols = ['id', 'site_id', 'lat', 'lng', 'form_name',
                  'unit_name', 'geochron', 'sample_id', 'age', 'age_err']
-    fieldtypes = [int, str, float, float, str, str, str, int, float, float]
+    fieldtypes = [str, str, float, float, str, str, str, str, float, float]
     dtype = { fc: ft for fc, ft in zip(fieldcols, fieldtypes) }
-    fielddata = pd.read_csv(fname, names=fieldcols, dtype=dtype, skiprows=1)
+    fielddata = pd.read_csv(fname, names=fieldcols,
+                            dtype=dtype, na_values=['-'], skiprows=1)
 
     # Calculate a scalar index to represent the layer boundaries, based on
     # what we've got in our data files so far.  Add as 'val' column to data.
-    fieldval_lookup = { fn: i for i, fn in enumerate(config_layers.index) }
-    fieldval = [fieldval_lookup.get(fn, -1) for fn in fielddata.form_name]
+    fieldval_lookup = { fn: i for i, fn in enumerate(config_layers.name) }
+    fieldval = pd.Series([fieldval_lookup.get(fn, -1) for fn in fielddata.form_name])
     fielddata = pd.concat([fielddata, fieldval], axis=1)
-    fielddata.columns = list(fielddata.columns) + ['val']
+    fielddata.rename(columns={0:'val'}, inplace=True)
 
     return fielddata
 

@@ -71,7 +71,6 @@ def write_sensor_data(data, lng, lat, L, stag, rhdr="", shdr="", zval=-0.5):
     idx = np.all([np.abs(x) < 0.5*L, np.abs(y) < 0.5*L], axis=0)
     x = x[idx] + 0.5*L
     y = y[idx] + 0.5*L
-    z = np.ones(x.shape) * zval
     v = data.val.values[idx]
 
     # Come up with transformed DataFrames so we can just use to_csv.
@@ -79,6 +78,7 @@ def write_sensor_data(data, lng, lat, L, stag, rhdr="", shdr="", zval=-0.5):
     if zval is None:
         sdata = pd.DataFrame(np.array([x, y])).T
     else:
+        z = np.ones(x.shape) * zval
         sdata = pd.DataFrame(np.array([x, y, z])).T
     rdata = pd.DataFrame(np.array([v])).T
 
@@ -930,7 +930,7 @@ def write_config(lng, lat, L, maxdepth, layers, H_IGRF,
             "# specified in the gravity locations file. The measurements can be considered\n"
             "# free air anomaly or Bouguer anomaly in milligals, depending on whether the\n"
             "# model has explicitly added an air layer at the top of the simulation.\n\n")
-    fieldshdr = ("# GravSensors: This file gives a list of location for gravity measurements.\n"
+    shdr = ("# GravSensors: This file gives a list of location for gravity measurements.\n"
             "# The columns are x,y,z in metres. these are not offsets from the world\n"
             "# boundaries so if your world doesn't start from zero be careful that the\n"
             "# sensors are actually placed inside the world. An error should be flagged if\n"
@@ -958,6 +958,7 @@ def write_config(lng, lat, L, maxdepth, layers, H_IGRF,
     rhdr = ("# FieldObsReadings: This gives a list of the readings from the sensors\n"
             "# in the FieldObsSensors file. They are assumed to be visual observations\n"
             "# of formations at the surface (categorical, layer boundary index values).\n"
+            "# A value of -1 indicates observation of a layer not listed in the prior.\n")
     shdr = ("# FieldObsSensors: This file gives a list of location for geological\n"
             "# field observations. The columns are x,y in metres; these are not offsets\n"
             "# from the world boundaries, so if your world doesn't start from zero,\n"
