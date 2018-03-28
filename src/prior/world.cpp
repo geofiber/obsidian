@@ -165,8 +165,11 @@ namespace obsidian
       // RS 2018/03/22:  Keep drawing thetas until we get a parameter vector
       // with all the components within the given hard bounds.  Try at most
       // max_inbound_sample_tries times to avoid infinite loops.
+      uint max_inbounds_sample_tries = 1000;
+      class ThetaBoundsError { };
       uint i;
       Eigen::VectorXd theta_draw;
+
       for (i = 0; i < max_inbounds_sample_tries; i++)
       {
         WorldParams prior_draw = { distrib::drawVectorFrom(propertyPrior, gen, propMins, propMaxs),
@@ -178,6 +181,7 @@ namespace obsidian
             is_good_draw = 0;
         if (is_good_draw) return theta_draw;
       }
+
       // We didn't get a good draw, so throw an exception
       if (i == max_inbounds_sample_tries)
       {
