@@ -19,6 +19,7 @@
 #include "serial/seismic.hpp"
 #include "serial/contactpoint.hpp"
 #include "serial/thermal.hpp"
+#include "serial/fieldobs.hpp"
 #include "serial/commstypes.hpp"
 #include "comms/datatypes.hpp"
 
