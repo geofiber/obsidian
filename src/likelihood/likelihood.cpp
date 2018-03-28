@@ -214,7 +214,6 @@ namespace obsidian
       return l;
     }
 
-    template<>
     std::vector<double> likelihoodAll(const GlobalResults& synthetic, const GlobalResults& real, const GlobalSpec& spec,
                                       const std::set<ForwardModel>& enabled)
     {
@@ -227,6 +226,7 @@ namespace obsidian
           enabled.count(ForwardModel::CONTACTPOINT) ?
               likelihood<ForwardModel::CONTACTPOINT>(synthetic.cpoint, real.cpoint, spec.cpoint) : 0.0);
       lh.push_back(enabled.count(ForwardModel::THERMAL) ? likelihood<ForwardModel::THERMAL>(synthetic.therm, real.therm, spec.therm) : 0.0);
+      lh.push_back(enabled.count(ForwardModel::FIELDOBS) ? likelihood<ForwardModel::FIELDOBS>(synthetic.field, real.field, spec.field) : 0.0);
       return lh;
     }
   }
