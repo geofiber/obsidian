@@ -181,7 +181,7 @@ namespace obsidian
       // We didn't get a good draw, so throw an exception
       if (i == max_inbounds_sample_tries)
       {
-        std::cout << "FATAL: couldn't draw valid prior vector in", max_inbounds_sample_tries, "tries";
+        std::cout << "FATAL: couldn't draw valid prior vector in" << max_inbounds_sample_tries << "tries";
         throw ThetaBoundsError { };
       }
       return theta_draw;
