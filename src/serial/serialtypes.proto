@@ -196,6 +196,27 @@ message ContactPointResultsProtobuf
   repeated bytes readings = 3;
 }
 
+// RS 2018/03/28: fieldobs protobuf serialisation objects
+
+message FieldObsSpecProtobuf
+{
+  required uint64 numLocations = 1;
+  required bytes locations = 2;
+  required double noiseProb = 3;
+}
+
+message FieldObsParamsProtobuf
+{
+  required bool returnSensorData = 1;
+}
+
+message FieldObsResultsProtobuf
+{
+  required double likelihood = 1;
+  repeated uint64 numReadings = 2;
+  repeated bytes readings = 3;
+}
+
 // Eigen Matrix protobuf object for serialisation
 message EigenMatrixProtobuf
 {
