@@ -213,8 +213,8 @@ message FieldObsParamsProtobuf
 message FieldObsResultsProtobuf
 {
   required double likelihood = 1;
-  repeated uint64 numReadings = 2;
-  repeated bytes readings = 3;
+  optional uint64 numReadings = 2;
+  optional bytes readings = 3;
 }
 
 // Eigen Matrix protobuf object for serialisation
