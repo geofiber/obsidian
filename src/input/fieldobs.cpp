@@ -26,7 +26,7 @@ namespace obsidian
     ("fieldobs.enabled", po::value<bool>(), "enable sensor") //
     ("fieldobs.sensorLocations", po::value<std::string>(), "sensor locations") //
     ("fieldobs.sensorReadings", po::value<std::string>(), "sensor readings") //
-    ("fieldobs.noiseProb", po::value<double>(), "noise probability that field obs is wrong") //
+    ("fieldobs.noiseProb", po::value<double>(), "noise probability that field obs is wrong"); //
   }
 
   template<>
@@ -68,8 +68,7 @@ namespace obsidian
     FieldObsResults s;
     if (sensorsEnabled.count(ForwardModel::FIELDOBS))
     {
-      std::vector<std::vector<std::string>> data = io::csv::readRaw(vm["fieldobs.sensorReadings"].as<std::string>());
-      s.readings = readRagged<uint, 0>(data);
+      s.readings = io::csv::read<int, Eigen::Dynamic, 1>(vm["fieldobs.sensorReadings"].as<std::string>());
       s.likelihood = 0.0;
     }
     return s;
@@ -77,9 +76,7 @@ namespace obsidian
   template<>
   po::variables_map write<>(const std::string & prefix, FieldObsResults g, const po::options_description & od)
   {
-    std::vector<std::vector<std::string>> data;
-    writeRagged<double>(data, g.readings);
-    io::csv::writeRaw(prefix + "sensorReadings.csv", data);
+    io::csv::write<int, Eigen::Dynamic, 1>(prefix + "sensorReadings.csv", g.readings);
     return build_vm(po::variables_map(), od, "fieldobs", { { "sensorReadings", prefix + "sensorReadings.csv" } });
   }
 
