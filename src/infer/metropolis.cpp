@@ -26,6 +26,8 @@ namespace stateline
         return false;
       double deltaEnergy = newState.energy - oldState.energy;
       double deltaDensity = oldState.logDensity - newState.logDensity;
+      LOG(INFO)<< "oldState.logDensity: " << oldState.logDensity;
+      LOG(INFO)<< "newState.logDensity: " << newState.logDensity;
       LOG(INFO)<< "deltaDensity: " << deltaDensity;
       double probToAccept = std::min(1.0, std::exp(-1.0 * beta * (deltaEnergy + deltaDensity)));
 
