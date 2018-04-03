@@ -40,8 +40,8 @@ namespace stateline
       //! The energy (negative log likelihood) of the state.
       double energy;
     
-      //! The log density of the state evaluated for the proposal distribution.
-      double logDensity;
+      //! The log density ratio of the state evaluated for the proposal distribution.
+      double logDensityRatio;
 
       //! The inverse temperature of the chain when this state was recorded.
       double beta;

@@ -24,6 +24,7 @@
 #include "app/settings.hpp"
 #include "infer/chainarray.hpp"
 #include "infer/diagnostics.hpp"
+#include "distrib/multigaussian.hpp"
 #include "comms/transport.hpp"
 
 namespace stateline
@@ -152,9 +153,14 @@ namespace stateline
           bool isColdestChainInStack = id % chains_.numChains() == 0;
 
           // Handle the new proposal and add a new state to the chain
-          double logDensity = propPdfFn(propStates_.row(id));
-          LOG(INFO)<< "logDensity: " << logDensity << "\n";
-          State propState { propStates_.row(id), energy, logDensity, chains_.beta(id), false, SwapType::NoAttempt };
+	  double ss = chains_.lastState(id).sample.size();
+	  Eigen::MatrixXd Sigma = Eigen::MatrixXd::Identity(ss, ss) * sigmas_[id];
+	  obsidian::distrib::MultiGaussian gauss_old(chains_.lastState(id).sample.transpose(), Sigma);
+	  obsidian::distrib::MultiGaussian gauss_new(propStates_.row(id), Sigma);
+          double logDensity_old = propPdfFn(chains_.lastState(id).sample.transpose(), gauss_new);
+          double logDensity_new = propPdfFn(propStates_.row(id), gauss_old);
+          double logDensityRatio = logDensity_new - logDensity_old;
+          State propState { propStates_.row(id), energy, logDensityRatio, chains_.beta(id), false, SwapType::NoAttempt };
           bool propAccepted = chains_.append(id, propState);
           lengths_[id] += 1;
           updateAccepts(id, propAccepted);
@@ -267,8 +273,14 @@ namespace stateline
             auto result = policy.retrieve();
             uint id = result.first;
             double energy = result.second;
-	    double logDensity = propPdfFn(propStates_.row(id));
-            State propState { propStates_.row(id), energy, logDensity, chains_.beta(id), false, SwapType::NoAttempt };
+	    double ss = chains_.lastState(id).sample.size();
+	    Eigen::MatrixXd Sigma = Eigen::MatrixXd::Identity(ss, ss) * sigmas_[id];
+	    obsidian::distrib::MultiGaussian gauss_old(chains_.lastState(id).sample, Sigma);
+	    obsidian::distrib::MultiGaussian gauss_new(propStates_.row(id), Sigma);
+            double logDensity_old = propPdfFn(chains_.lastState(id).sample, gauss_new);
+            double logDensity_new = propPdfFn(propStates_.row(id), gauss_old);
+            double logDensityRatio = logDensity_new - logDensity_old;
+            State propState { propStates_.row(id), energy, logDensityRatio, chains_.beta(id), false, SwapType::NoAttempt };
             bool propAccepted = chains_.append(id, propState);
             lengths_[id] += 1;
             updateAccepts(id, propAccepted);
@@ -338,9 +350,9 @@ namespace stateline
         auto result = policy.retrieve();
         uint id = result.first;
         double energy = result.second;
-        double logDensity = fn(propStates_.row(id));
+        double logDensityRatio = 1.0;
         State s
-        { initialStates[id], energy, logDensity, chains_.beta(id), true, SwapType::NoAttempt};
+        { initialStates[id], energy, logDensityRatio, chains_.beta(id), true, SwapType::NoAttempt};
         chains_.initialise(id, s);
       }
     }
