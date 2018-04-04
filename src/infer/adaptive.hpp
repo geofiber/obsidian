@@ -90,6 +90,33 @@ namespace stateline
       //return proposal;
     };
     
+
+    //! Crank-Nicolson proposal function.
+    //! 
+    //! \param state The current state of the chain
+    //! \param sigma The standard deviation of the distribution (step size of the proposal)
+    //! \param min The minimum bound of theta 
+    //! \param max The maximum bound of theta 
+    //! \returns The new proposed theta
+    //!
+    Eigen::VectorXd crankNicolsonProposal(const Eigen::VectorXd &state, double sigma, 
+        const Eigen::VectorXd& min, const Eigen::VectorXd& max,
+	double ro
+    )
+    {
+      // Random number generators
+      static std::random_device rd;
+      static std::mt19937 generator(rd());
+      static std::normal_distribution<> rand; // Standard normal
+
+      Eigen::VectorXd proposal(state.rows());
+      for (int i = 0; i < proposal.rows(); i++) {
+        double epsilon = rand(generator) * sigma;
+        proposal(i) = (ro * state(i)) + std::pow(1 - std::pow(ro, 2.0), 0.5) * epsilon;
+      }
+
+      return bouncyBounds(proposal, min, max);
+    };
     
   }
 }

@@ -137,14 +137,25 @@ int main(int ac, char* av[])
       }
     }
   }
-
   LOG(INFO) << "initial samples generated";
-  // hard code the proposalPDFFn here but the proposal function should really be specified in the config file in the future
-  double (*pFn)(const Eigen::VectorXd&, const distrib::MultiGaussian&, const Eigen::VectorXd&, const Eigen::VectorXd&) = &obsidian::distrib::logPDF;
-  auto proposalPDFFn = std::bind(pFn, ph::_1, ph::_2, prior.world.thetaMinBound(), prior.world.thetaMaxBound());
-  auto proposal = std::bind(&mcmc::adaptiveGaussianProposal,ph::_1, ph::_2,
-                            prior.world.thetaMinBound(), prior.world.thetaMaxBound());
-  mcmc.run(policy, initialThetas, proposal, proposalPDFFn, mcmcSettings.wallTime);
+  if (mcmcSettings.distribution == "Normal") {
+	  double (*pFn)(const Eigen::VectorXd&, const distrib::MultiGaussian&, const Eigen::VectorXd&, const Eigen::VectorXd&) = &obsidian::distrib::logPDF;
+	  auto proposalPDFFn = std::bind(pFn, ph::_1, ph::_2, prior.world.thetaMinBound(), 
+	  	prior.world.thetaMaxBound());
+	  auto proposal = std::bind(&mcmc::adaptiveGaussianProposal,ph::_1, ph::_2,
+		  prior.world.thetaMinBound(), prior.world.thetaMaxBound());
+	  mcmc.run(policy, initialThetas, proposal, proposalPDFFn, mcmcSettings.wallTime);
+  } else if (mcmcSettings.distribution == "CrankNicolson") {
+	  double (*pFn)(const Eigen::VectorXd&, const distrib::MultiGaussian&, const Eigen::VectorXd&, const Eigen::VectorXd&, const double&) = &obsidian::distrib::crankNicolsonLogPDF;
+	  auto proposalPDFFn = std::bind(
+	  	pFn, ph::_1, ph::_2, prior.world.thetaMinBound(), 
+	  	prior.world.thetaMaxBound(), mcmcSettings.ro
+	  );
+	  auto proposal = std::bind(&mcmc::crankNicolsonProposal,ph::_1, ph::_2,
+		  prior.world.thetaMinBound(), prior.world.thetaMaxBound(), mcmcSettings.ro);
+	  mcmc.run(policy, initialThetas, proposal, proposalPDFFn, mcmcSettings.wallTime);
+  }
+  //mcmc.run(policy, initialThetas, proposal, proposalPDFFn, mcmcSettings.wallTime);
 
   // This will gracefully stop all delegators internal threads
   delegator.stop();
