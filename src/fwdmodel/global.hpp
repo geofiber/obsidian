@@ -34,7 +34,7 @@ namespace obsidian
         enabled.count(ForwardModel::MTANISO) ? generateCache<ForwardModel::MTANISO>(boundaryInterpolation, spec.world, spec.mt) : MtAnisoCache(),
         enabled.count(ForwardModel::SEISMIC1D) ? generateCache<ForwardModel::SEISMIC1D>(boundaryInterpolation, spec.world, spec.s1d) : Seismic1dCache(),
         enabled.count(ForwardModel::CONTACTPOINT) ? generateCache<ForwardModel::CONTACTPOINT>(boundaryInterpolation, spec.world, spec.cpoint): ContactPointCache(),
-        enabled.count(ForwardModel::THERMAL) ? generateCache<ForwardModel::THERMAL>(boundaryInterpolation, spec.world, spec.therm): ThermalCache()
+        enabled.count(ForwardModel::THERMAL) ? generateCache<ForwardModel::THERMAL>(boundaryInterpolation, spec.world, spec.therm): ThermalCache(),
         enabled.count(ForwardModel::FIELDOBS) ? generateCache<ForwardModel::FIELDOBS>(boundaryInterpolation, spec.world, spec.field): FieldObsCache()
       };
     }
@@ -57,7 +57,7 @@ namespace obsidian
         enabled.count(ForwardModel::SEISMIC1D) ? forwardModel<ForwardModel::SEISMIC1D>(spec.s1d, cache.s1d, params.world) : Seismic1dResults(),
         enabled.count(ForwardModel::CONTACTPOINT) ? forwardModel<ForwardModel::CONTACTPOINT>(spec.cpoint, cache.cpoint, params.world) : ContactPointResults(),
         enabled.count(ForwardModel::THERMAL) ? forwardModel<ForwardModel::THERMAL>(spec.therm, cache.therm, params.world) : ThermalResults(),
-        enabled.count(ForwardModel::FIELDOBS) ? forwardModel<ForwardModel::FIELDOBS>(spec.field, cache.field, params.world) : FieldObsResults(),
+        enabled.count(ForwardModel::FIELDOBS) ? forwardModel<ForwardModel::FIELDOBS>(spec.field, cache.field, params.world) : FieldObsResults()
       };
     }
   }
