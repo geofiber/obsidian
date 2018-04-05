@@ -126,9 +126,9 @@ namespace obsidian
     }
     for (uint l = 0; l < result.readings.size(); l++)
     {
-      if (result.readings[l] < 0 or result.readings[l] >= world.boundaries.size())
+      if (result.readings[l] < -1 or result.readings[l] >= world.boundaries.size())
       {
-        LOG(ERROR)<< "input: field observation must be a valid world boundary index between 0 and" << world.boundaries.size();
+        LOG(ERROR)<< "input: field observation must be a valid world boundary index between 0 and " << world.boundaries.size() << "(or -1 for missing)";
         valid = false;
       }
     }

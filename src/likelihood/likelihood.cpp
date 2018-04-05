@@ -204,9 +204,11 @@ namespace obsidian
       // We can revisit these assumptions when we have a working version.
       double l = 0;
       double p = spec.noiseProb;
+      double lnp = std::log(p);
+      double ln1mp = std::log(1.0 - p);
       for (uint i = 0; i < synthetic.readings.size(); i++)
       {
-        double t = ((real.readings[i] == synthetic.readings[i]) ? 1.0-p : p);
+        double t = ((real.readings[i] == synthetic.readings[i]) ? ln1mp : lnp);
         l += t;
         VLOG(3) << "Field Observation Reading " << i << " likelihood:" << t;
       }
