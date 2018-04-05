@@ -93,8 +93,8 @@ namespace stateline
       //! \param propPDFFn The proposal PDF function.
       //! \param numSeconds The number of seconds to run the MCMC for.
       //!
-      template<class AsyncPolicy, class PropFn, class PropPdfFn>
-      void run(AsyncPolicy &policy, const std::vector<Eigen::VectorXd>& initialStates, PropFn &propFn, PropPdfFn &propPdfFn, uint numSeconds)
+      template<class AsyncPolicy, class PropFn, class PropPdfFn, class PropDensityRatioFn>
+      void run(AsyncPolicy &policy, const std::vector<Eigen::VectorXd>& initialStates, PropFn &propFn, PropPdfFn &propPdfFn, PropDensityRatioFn &propDensityRatioFn, uint numSeconds)
       {
         using namespace std::chrono;
 
@@ -108,7 +108,7 @@ namespace stateline
         // Initialise the chains if we're not recovering
         if (!recover_)
         {
-          initialise(policy, initialStates, propPdfFn);
+          initialise(policy, initialStates);
         }
 
         // Start all the chains from hottest to coldest
@@ -153,13 +153,12 @@ namespace stateline
           bool isColdestChainInStack = id % chains_.numChains() == 0;
 
           // Handle the new proposal and add a new state to the chain
-	  double ss = chains_.lastState(id).sample.size();
-	  Eigen::MatrixXd Sigma = Eigen::MatrixXd::Identity(ss, ss) * sigmas_[id];
-	  obsidian::distrib::MultiGaussian gauss_old(chains_.lastState(id).sample.transpose(), Sigma);
-	  obsidian::distrib::MultiGaussian gauss_new(propStates_.row(id), Sigma);
-          double logDensity_old = propPdfFn(chains_.lastState(id).sample.transpose(), gauss_new);
-          double logDensity_new = propPdfFn(propStates_.row(id), gauss_old);
-          double logDensityRatio = logDensity_new - logDensity_old;
+	  obsidian::distrib::MultiGaussian proposal_gauss = propDensityRatioFn(propStates_.row(id), sigmas_[id]);
+	  double proposalDensity = propPdfFn(propStates_.row(id),proposal_gauss);
+	  obsidian::distrib::MultiGaussian lastsample_gauss = propDensityRatioFn(chains_.lastState(id).sample, sigmas_[id]);
+	  double lastsampleDensity = propPdfFn(chains_.lastState(id).sample,lastsample_gauss);
+
+	  double logDensityRatio = proposalDensity - lastsampleDensity;
           State propState { propStates_.row(id), energy, logDensityRatio, chains_.beta(id), false, SwapType::NoAttempt };
           bool propAccepted = chains_.append(id, propState);
           lengths_[id] += 1;
@@ -273,13 +272,12 @@ namespace stateline
             auto result = policy.retrieve();
             uint id = result.first;
             double energy = result.second;
-	    double ss = chains_.lastState(id).sample.size();
-	    Eigen::MatrixXd Sigma = Eigen::MatrixXd::Identity(ss, ss) * sigmas_[id];
-	    obsidian::distrib::MultiGaussian gauss_old(chains_.lastState(id).sample, Sigma);
-	    obsidian::distrib::MultiGaussian gauss_new(propStates_.row(id), Sigma);
-            double logDensity_old = propPdfFn(chains_.lastState(id).sample, gauss_new);
-            double logDensity_new = propPdfFn(propStates_.row(id), gauss_old);
-            double logDensityRatio = logDensity_new - logDensity_old;
+	    obsidian::distrib::MultiGaussian proposal_gauss = propDensityRatioFn(propStates_.row(id), sigmas_[id]);
+	    double proposalDensity = propPdfFn(propStates_.row(id),proposal_gauss);
+	    obsidian::distrib::MultiGaussian lastsample_gauss = propDensityRatioFn(chains_.lastState(id).sample, sigmas_[id]);
+	    double lastsampleDensity = propPdfFn(chains_.lastState(id).sample,lastsample_gauss);
+
+	    double logDensityRatio = proposalDensity - lastsampleDensity;
             State propState { propStates_.row(id), energy, logDensityRatio, chains_.beta(id), false, SwapType::NoAttempt };
             bool propAccepted = chains_.append(id, propState);
             lengths_[id] += 1;
@@ -334,8 +332,8 @@ namespace stateline
     //! \param policy Async policy to evaluate states.
     //! \param initialStates A list containing the initial states of the chains.
     //!
-    template <class AsyncPolicy, class LogDensityFn>
-    void initialise(AsyncPolicy &policy, const std::vector<Eigen::VectorXd>& initialStates, LogDensityFn &fn)
+    template <class AsyncPolicy>
+    void initialise(AsyncPolicy &policy, const std::vector<Eigen::VectorXd>& initialStates)
     {
       // Evaluate the initial states of the chains
       for (uint i = 0; i < chains_.numTotalChains(); i++)

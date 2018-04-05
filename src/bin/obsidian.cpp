@@ -35,6 +35,7 @@
 #include "datatype/sensors.hpp"
 #include "detail.hpp"
 #include "distrib/multigaussian.hpp"
+#include "prior/world.hpp"
 
 using namespace obsidian;
 using namespace stateline;
@@ -138,24 +139,27 @@ int main(int ac, char* av[])
     }
   }
   LOG(INFO) << "initial samples generated";
-  if (mcmcSettings.distribution == "Normal") {
-	  double (*pFn)(const Eigen::VectorXd&, const distrib::MultiGaussian&, const Eigen::VectorXd&, const Eigen::VectorXd&) = &obsidian::distrib::logPDF;
+  if (mcmcSettings.distribution.compare("Normal") == 0) {
+	  LOG(INFO) << "normal proposal";
+	  double (*pFn)(const Eigen::VectorXd&, const distrib::MultiGaussian&, 
+	  const Eigen::VectorXd&, const Eigen::VectorXd&) = &obsidian::distrib::logPDF;
 	  auto proposalPDFFn = std::bind(pFn, ph::_1, ph::_2, prior.world.thetaMinBound(), 
 	  	prior.world.thetaMaxBound());
 	  auto proposal = std::bind(&mcmc::adaptiveGaussianProposal,ph::_1, ph::_2,
 		  prior.world.thetaMinBound(), prior.world.thetaMaxBound());
-	  mcmc.run(policy, initialThetas, proposal, proposalPDFFn, mcmcSettings.wallTime);
-  } else if (mcmcSettings.distribution == "CrankNicolson") {
-	  double (*pFn)(const Eigen::VectorXd&, const distrib::MultiGaussian&, const Eigen::VectorXd&, const Eigen::VectorXd&, const double&) = &obsidian::distrib::crankNicolsonLogPDF;
-	  auto proposalPDFFn = std::bind(
-	  	pFn, ph::_1, ph::_2, prior.world.thetaMinBound(), 
-	  	prior.world.thetaMaxBound(), mcmcSettings.ro
-	  );
+	  obsidian::distrib::MultiGaussian (*propRatioFn)(const Eigen""VectorXd, const double) = &mcmc::normalProposalDensityRatio;
+	  //auto propRatioFn = &mcmc::normalProposalDensityRatio;
+	  mcmc.run(policy, initialThetas, proposal, proposalPDFFn, propRatioFn, mcmcSettings.wallTime);
+  } else if (mcmcSettings.distribution.compare("CrankNicolson") == 0) {
+	  LOG(INFO) << "crank nicolson proposal";
+	  double (*proposalPDFFn)(const Eigen::VectorXd&) = &obsidian::prior::WorldParamsPrior::evaluatePDF;
 	  auto proposal = std::bind(&mcmc::crankNicolsonProposal,ph::_1, ph::_2,
-		  prior.world.thetaMinBound(), prior.world.thetaMaxBound(), mcmcSettings.ro);
-	  mcmc.run(policy, initialThetas, proposal, proposalPDFFn, mcmcSettings.wallTime);
+		  prior.world.thetaMinBound(), prior.world.thetaMaxBound(), 
+		  mcmcSettings.ro, prior);
+	  obsidian::distrib::MultiGaussian (*propRatioFn)(const Eigen::VectorXd, const double sigma) = &mcmc::crankNicolsonProposalDensityRatio;
+	  //auto propRatioFn = &mcmc::crankNicolsonProposalDensityRatio;
+	  mcmc.run(policy, initialThetas, proposal, proposalPDFFn, propRatioFn, mcmcSettings.wallTime);
   }
-  //mcmc.run(policy, initialThetas, proposal, proposalPDFFn, mcmcSettings.wallTime);
 
   // This will gracefully stop all delegators internal threads
   delegator.stop();

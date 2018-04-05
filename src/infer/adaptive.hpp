@@ -13,6 +13,9 @@
 #include <random>
 #include <functional>
 #include <Eigen/Core>
+#include "prior/world.hpp"
+#include "prior/prior.hpp"
+#include "distrib/multigaussian.hpp"
 
 namespace stateline
 {
@@ -101,7 +104,7 @@ namespace stateline
     //!
     Eigen::VectorXd crankNicolsonProposal(const Eigen::VectorXd &state, double sigma, 
         const Eigen::VectorXd& min, const Eigen::VectorXd& max,
-	double ro
+	double ro, obsidian::GlobalPrior& prior
     )
     {
       // Random number generators
@@ -110,13 +113,38 @@ namespace stateline
       static std::normal_distribution<> rand; // Standard normal
 
       Eigen::VectorXd proposal(state.rows());
+      Eigen::VectorXd epsilon_vec = prior.sample(generator);
       for (int i = 0; i < proposal.rows(); i++) {
-        double epsilon = rand(generator) * sigma;
+        double epsilon = epsilon_vec(i);
         proposal(i) = (ro * state(i)) + std::pow(1 - std::pow(ro, 2.0), 0.5) * epsilon;
       }
 
       return bouncyBounds(proposal, min, max);
     };
     
+     obsidian::distrib::MultiGaussian normalProposalDensityRatio(
+	const Eigen::VectorXd & sample,
+	const double sigma
+
+    )
+    {
+	double n = sample.size();
+	Eigen::MatrixXd Sigma = Eigen::MatrixXd::Identity(n, n) * sigma;
+	obsidian::distrib::MultiGaussian gauss(sample, Sigma);
+	return gauss;
+    };
+
+    obsidian::distrib::MultiGaussian crankNicolsonProposalDensityRatio(
+    	const Eigen::VectorXd &sample, 
+	const double sigma
+    )
+    {
+	double n = sample.size();
+	Eigen::MatrixXd Sigma = Eigen::MatrixXd::Identity(n, n);
+	Eigen::MatrixXd Mu = Eigen::MatrixXd::Zero(n, 1);
+	obsidian::distrib::MultiGaussian gauss(Mu, Sigma);
+	return gauss;
+    };
+
   }
 }
