@@ -147,16 +147,16 @@ int main(int ac, char* av[])
 	  	prior.world.thetaMaxBound());
 	  auto proposal = std::bind(&mcmc::adaptiveGaussianProposal,ph::_1, ph::_2,
 		  prior.world.thetaMinBound(), prior.world.thetaMaxBound());
-	  obsidian::distrib::MultiGaussian (*propRatioFn)(const Eigen""VectorXd, const double) = &mcmc::normalProposalDensityRatio;
+	  obsidian::distrib::MultiGaussian (*propRatioFn)(const Eigen::VectorXd&, const double sigma) = &mcmc::normalProposalDensityRatio;
 	  //auto propRatioFn = &mcmc::normalProposalDensityRatio;
 	  mcmc.run(policy, initialThetas, proposal, proposalPDFFn, propRatioFn, mcmcSettings.wallTime);
   } else if (mcmcSettings.distribution.compare("CrankNicolson") == 0) {
 	  LOG(INFO) << "crank nicolson proposal";
-	  double (*proposalPDFFn)(const Eigen::VectorXd&) = &obsidian::prior::WorldParamsPrior::evaluatePDF;
+	  auto proposalPDFFn = [=](const Eigen::VectorXd& a, const distrib::MultiGaussian& b){return prior.evaluate(a);};
 	  auto proposal = std::bind(&mcmc::crankNicolsonProposal,ph::_1, ph::_2,
 		  prior.world.thetaMinBound(), prior.world.thetaMaxBound(), 
 		  mcmcSettings.ro, prior);
-	  obsidian::distrib::MultiGaussian (*propRatioFn)(const Eigen::VectorXd, const double sigma) = &mcmc::crankNicolsonProposalDensityRatio;
+	  obsidian::distrib::MultiGaussian (*propRatioFn)(const Eigen::VectorXd&, const double sigma) = &mcmc::crankNicolsonProposalDensityRatio;
 	  //auto propRatioFn = &mcmc::crankNicolsonProposalDensityRatio;
 	  mcmc.run(policy, initialThetas, proposal, proposalPDFFn, propRatioFn, mcmcSettings.wallTime);
   }

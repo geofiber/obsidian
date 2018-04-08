@@ -15,7 +15,7 @@ namespace obsidian
     }
 
     // get the number of partition elements
-    uint WorldParamsPrior::size()
+    uint WorldParamsPrior::size() const
     {
       // Just get the size of the objects
       uint size = 0;
@@ -62,7 +62,7 @@ namespace obsidian
     }
 
     // used by sample... almost the same as size()
-    Eigen::VectorXd WorldParamsPrior::deconstruct(const WorldParams& params)
+    Eigen::VectorXd WorldParamsPrior::deconstruct(const WorldParams& params) const
     {
       uint nLayers = propertyPrior.size();
       CHECK_EQ(nLayers, params.rockProperties.size());
@@ -105,7 +105,7 @@ namespace obsidian
     }
 
     // build a WorldParams object from a flat vector
-    WorldParams WorldParamsPrior::reconstruct(const Eigen::VectorXd & theta)
+    WorldParams WorldParamsPrior::reconstruct(const Eigen::VectorXd & theta) const
     {
       uint nLayers = propertyPrior.size();
       CHECK_EQ(ctrlptPrior.size(), nLayers);
@@ -156,7 +156,7 @@ namespace obsidian
       return wParams;
     }
 
-    Eigen::VectorXd WorldParamsPrior::sample(std::mt19937 &gen)
+    Eigen::VectorXd WorldParamsPrior::sample(std::mt19937 &gen) const
     {
       std::vector<bool> uniformFlags;
       for (auto i : classes)
@@ -192,7 +192,7 @@ namespace obsidian
     }
 
     // Evaluate log likelihood of theta under this prior
-    double WorldParamsPrior::evaluatePDF(const Eigen::VectorXd& theta)
+    double WorldParamsPrior::evaluatePDF(const Eigen::VectorXd& theta) const
     {
 
       uint nLayers = propertyPrior.size();

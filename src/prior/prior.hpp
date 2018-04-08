@@ -42,11 +42,11 @@ namespace obsidian
 //                  const std::vector<distrib::MultiGaussian>& properties,
 //                  const std::vector<Eigen::VectorXi>& propMasks);
 
-    GlobalParams reconstruct(const Eigen::VectorXd& theta);
-    double evaluate(const Eigen::VectorXd& theta);
-    Eigen::VectorXd sample(std::mt19937 &gen);
+    GlobalParams reconstruct(const Eigen::VectorXd& theta) const;
+    double evaluate(const Eigen::VectorXd& theta) const;
+    Eigen::VectorXd sample(std::mt19937 &gen) const;
 
-    uint size();
+    uint size() const;
 
 //    private:
     prior::WorldParamsPrior world;
