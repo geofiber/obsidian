@@ -103,7 +103,6 @@ namespace stateline
     //! \returns The new proposed theta
     //!
     Eigen::VectorXd crankNicolsonProposal(const Eigen::VectorXd &state, double sigma, 
-        const Eigen::VectorXd& min, const Eigen::VectorXd& max,
 	double ro, obsidian::GlobalPrior& prior
     )
     {
@@ -119,31 +118,19 @@ namespace stateline
         proposal(i) = (ro * state(i)) + std::pow(1 - std::pow(ro, 2.0), 0.5) * epsilon;
       }
 
-      return bouncyBounds(proposal, min, max);
+      return proposal;
     };
     
-     obsidian::distrib::MultiGaussian normalProposalDensityRatio(
-	const Eigen::VectorXd & sample,
-	const double sigma
-
+     double gaussianProposalPDF(
+	const Eigen::VectorXd& theta, const double sigma, const Eigen::VectorXd& thetaMins,
+	const Eigen::VectorXd& thetaMaxs
     )
     {
-	double n = sample.size();
+	double n = theta.size();
 	Eigen::MatrixXd Sigma = Eigen::MatrixXd::Identity(n, n) * sigma;
-	obsidian::distrib::MultiGaussian gauss(sample, Sigma);
-	return gauss;
-    };
-
-    obsidian::distrib::MultiGaussian crankNicolsonProposalDensityRatio(
-    	const Eigen::VectorXd &sample, 
-	const double sigma
-    )
-    {
-	double n = sample.size();
-	Eigen::MatrixXd Sigma = Eigen::MatrixXd::Identity(n, n);
-	Eigen::MatrixXd Mu = Eigen::MatrixXd::Zero(n, 1);
-	obsidian::distrib::MultiGaussian gauss(Mu, Sigma);
-	return gauss;
+	obsidian::distrib::MultiGaussian input(theta, Sigma);
+	double density = obsidian::distrib::logPDF(theta, input, thetaMins, thetaMaxs);
+	return density;
     };
 
   }

@@ -44,12 +44,6 @@ namespace obsidian
       return MultiGaussian(mu, cov, nX, nY);
     }
 
-    double crankNicolsonLogPDF(const Eigen::VectorXd& theta, const MultiGaussian& input, const Eigen::VectorXd& thetaMins, const Eigen::VectorXd& thetaMaxs, const double& ro) {
-	Eigen::VectorXd new_theta = theta * ro;
-	return logPDF(new_theta, input, thetaMins, thetaMaxs);
-    }
-
-
     double logPDF(const Eigen::MatrixXd& theta, const MultiGaussian& input, const Eigen::MatrixXd& thetaMins,
                   const Eigen::MatrixXd& thetaMaxs)
     {

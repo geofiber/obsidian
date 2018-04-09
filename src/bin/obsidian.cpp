@@ -141,24 +141,28 @@ int main(int ac, char* av[])
   LOG(INFO) << "initial samples generated";
   if (mcmcSettings.distribution.compare("Normal") == 0) {
 	  LOG(INFO) << "normal proposal";
-	  double (*pFn)(const Eigen::VectorXd&, const distrib::MultiGaussian&, 
-	  const Eigen::VectorXd&, const Eigen::VectorXd&) = &obsidian::distrib::logPDF;
-	  auto proposalPDFFn = std::bind(pFn, ph::_1, ph::_2, prior.world.thetaMinBound(), 
-	  	prior.world.thetaMaxBound());
-	  auto proposal = std::bind(&mcmc::adaptiveGaussianProposal,ph::_1, ph::_2,
-		  prior.world.thetaMinBound(), prior.world.thetaMaxBound());
-	  obsidian::distrib::MultiGaussian (*propRatioFn)(const Eigen::VectorXd&, const double sigma) = &mcmc::normalProposalDensityRatio;
-	  //auto propRatioFn = &mcmc::normalProposalDensityRatio;
-	  mcmc.run(policy, initialThetas, proposal, proposalPDFFn, propRatioFn, mcmcSettings.wallTime);
+	  double (*pFn)(const Eigen::VectorXd&, const double, 
+		const Eigen::VectorXd&, const Eigen::VectorXd&) = &mcmc::gaussianProposalPDF;
+	  auto proposalPDF = std::bind(
+	  	pFn, 
+		ph::_1, ph::_2, 
+	  	prior.world.thetaMinBound(), prior.world.thetaMaxBound()
+	  );
+	  auto proposal = std::bind(
+	  	&mcmc::adaptiveGaussianProposal,
+		ph::_1, ph::_2,
+		prior.world.thetaMinBound(), prior.world.thetaMaxBound()
+	  );
+	  mcmc.run(policy, initialThetas, proposal, proposalPDF, mcmcSettings.wallTime);
   } else if (mcmcSettings.distribution.compare("CrankNicolson") == 0) {
 	  LOG(INFO) << "crank nicolson proposal";
-	  auto proposalPDFFn = [=](const Eigen::VectorXd& a, const distrib::MultiGaussian& b){return prior.evaluate(a);};
-	  auto proposal = std::bind(&mcmc::crankNicolsonProposal,ph::_1, ph::_2,
-		  prior.world.thetaMinBound(), prior.world.thetaMaxBound(), 
-		  mcmcSettings.ro, prior);
-	  obsidian::distrib::MultiGaussian (*propRatioFn)(const Eigen::VectorXd&, const double sigma) = &mcmc::crankNicolsonProposalDensityRatio;
-	  //auto propRatioFn = &mcmc::crankNicolsonProposalDensityRatio;
-	  mcmc.run(policy, initialThetas, proposal, proposalPDFFn, propRatioFn, mcmcSettings.wallTime);
+	  auto proposalPDF = [=](const Eigen::VectorXd& theta, const double sigma){return prior.evaluate(theta);};
+	  auto proposal = std::bind(
+	  	&mcmc::crankNicolsonProposal, 
+		ph::_1, ph::_2,
+		mcmcSettings.ro, prior
+	  );
+	  mcmc.run(policy, initialThetas, proposal, proposalPDF, mcmcSettings.wallTime);
   }
 
   // This will gracefully stop all delegators internal threads

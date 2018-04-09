@@ -93,8 +93,8 @@ namespace stateline
       //! \param propPDFFn The proposal PDF function.
       //! \param numSeconds The number of seconds to run the MCMC for.
       //!
-      template<class AsyncPolicy, class PropFn, class PropPdfFn, class PropDensityRatioFn>
-      void run(AsyncPolicy &policy, const std::vector<Eigen::VectorXd>& initialStates, PropFn &propFn, PropPdfFn &propPdfFn, PropDensityRatioFn &propDensityRatioFn, uint numSeconds)
+      template<class AsyncPolicy, class PropFn, class PropPdfFn>
+      void run(AsyncPolicy &policy, const std::vector<Eigen::VectorXd>& initialStates, PropFn &propFn, PropPdfFn &propPdfFn, uint numSeconds)
       {
         using namespace std::chrono;
 
@@ -153,11 +153,8 @@ namespace stateline
           bool isColdestChainInStack = id % chains_.numChains() == 0;
 
           // Handle the new proposal and add a new state to the chain
-	  obsidian::distrib::MultiGaussian proposal_gauss = propDensityRatioFn(propStates_.row(id), sigmas_[id]);
-	  double proposalDensity = propPdfFn(propStates_.row(id),proposal_gauss);
-	  obsidian::distrib::MultiGaussian lastsample_gauss = propDensityRatioFn(chains_.lastState(id).sample, sigmas_[id]);
-	  double lastsampleDensity = propPdfFn(chains_.lastState(id).sample,lastsample_gauss);
-
+	  double proposalDensity = propPdfFn(propStates_.row(id), sigmas_[id]);
+	  double lastsampleDensity = propPdfFn(chains_.lastState(id).sample, sigmas_[id]);
 	  double logDensityRatio = proposalDensity - lastsampleDensity;
           State propState { propStates_.row(id), energy, logDensityRatio, chains_.beta(id), false, SwapType::NoAttempt };
           bool propAccepted = chains_.append(id, propState);
@@ -272,11 +269,8 @@ namespace stateline
             auto result = policy.retrieve();
             uint id = result.first;
             double energy = result.second;
-	    obsidian::distrib::MultiGaussian proposal_gauss = propDensityRatioFn(propStates_.row(id), sigmas_[id]);
-	    double proposalDensity = propPdfFn(propStates_.row(id),proposal_gauss);
-	    obsidian::distrib::MultiGaussian lastsample_gauss = propDensityRatioFn(chains_.lastState(id).sample, sigmas_[id]);
-	    double lastsampleDensity = propPdfFn(chains_.lastState(id).sample,lastsample_gauss);
-
+	    double proposalDensity = propPdfFn(propStates_.row(id), sigmas_[id]);
+	    double lastsampleDensity = propPdfFn(chains_.lastState(id).sample, sigmas_[id]);
 	    double logDensityRatio = proposalDensity - lastsampleDensity;
             State propState { propStates_.row(id), energy, logDensityRatio, chains_.beta(id), false, SwapType::NoAttempt };
             bool propAccepted = chains_.append(id, propState);
