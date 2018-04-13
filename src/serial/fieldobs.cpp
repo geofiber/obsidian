@@ -48,13 +48,11 @@ namespace obsidian
     {
       FieldObsResultsProtobuf pb;
       pb.set_likelihood(g.likelihood);
-
-      for (const Eigen::VectorXd & reading : g.readings)
+      if (g.readings.size() > 0)
       {
-        pb.add_numreadings(reading.rows());
-        pb.add_readings(matrixString(reading));
+        pb.set_numreadings(g.readings.size());
+        pb.set_readings(matrixString(g.readings));
       }
-
       return protobufToString(pb);
     }
     void unserialise(const std::string& s, FieldObsResults& g)
@@ -62,11 +60,9 @@ namespace obsidian
       FieldObsResultsProtobuf pb;
       pb.ParseFromString(s);
       g.likelihood = pb.likelihood();
-      g.readings.resize(pb.numreadings_size());
-      int index = -1;
-      while (++index < pb.numreadings_size())
+      if (pb.has_readings())
       {
-        g.readings[index] = stringMatrix<double, D, 1>(pb.readings(index), pb.numreadings(index));
+        g.readings = stringMatrix(pb.readings(), pb.numreadings());
       }
     }
   }

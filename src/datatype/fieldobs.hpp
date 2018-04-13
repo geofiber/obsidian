@@ -58,7 +58,7 @@ namespace obsidian
     /**
      * Vector containing index of layer intersected at the surface
      */
-    std::vector<uint> readings;
+    Eigen::VectorXd readings;
   };
 
   template<>

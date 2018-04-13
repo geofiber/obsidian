@@ -55,9 +55,10 @@ namespace obsidian
         uint minlayer = 0;
         double minz = 1e+8;
         for (uint layer = 0; layer < transitions.rows(); layer++)
-          if (transitions(layer, row) > 0 && transitions(layer, row) < minz)
+          if (transitions(layer, location) > 0 &&
+              transitions(layer, location) < minz)
           {
-            minz = transitions(layer, row);
+            minz = transitions(layer, location);
             minlayer = layer;
           }
         results.readings[location] = minlayer;

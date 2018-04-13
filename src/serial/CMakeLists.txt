@@ -14,7 +14,7 @@ ADD_LIBRARY(protobuf ${PROTO_SRC}
 
 ADD_LIBRARY(serial   gravity.cpp 
    magnetic.cpp  mt.cpp  utility.cpp  world.cpp
-   commstypes.cpp seismic.cpp contactpoint.cpp thermal.cpp  mcmc.cpp)
+   commstypes.cpp seismic.cpp contactpoint.cpp thermal.cpp  mcmc.cpp fieldobs.cpp)
 
 ADD_EXECUTABLE ( test-serial-gravity testgravity.cpp)
 TARGET_LINK_LIBRARIES(test-serial-gravity serial)
@@ -43,6 +43,10 @@ REGISTER_UNIT_TESTS( test-serial-world )
 ADD_EXECUTABLE ( test-serial-thermal testthermal.cpp)
 TARGET_LINK_LIBRARIES(test-serial-thermal serial)
 REGISTER_UNIT_TESTS( test-serial-thermal )
+
+ADD_EXECUTABLE ( test-serial-fieldobs testfieldobs.cpp)
+TARGET_LINK_LIBRARIES(test-serial-fieldobs serial)
+REGISTER_UNIT_TESTS( test-serial-fieldobs )
 
 ADD_DEPENDENCIES(serial protobuf)
                     

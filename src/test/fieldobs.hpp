@@ -47,17 +47,13 @@ namespace obsidian
   template<>
   inline void generateVariations<FieldObsSpec>(std::function<void(FieldObsSpec)> test)
   {
-    for (uint u :
+    for (uint l :
     { 0, 1, 5, 20 })
     {
-      for (uint v :
-      { 1, 1, 5, 20 })
-      {
-        FieldObsSpec spec;
-        spec.locations = testing::randomMatrix(u, 2);
-        spec.noiseProb = (testing::randomNoise())[0];
-        test(spec);
-      }
+      FieldObsSpec spec;
+      spec.locations = testing::randomMatrix(l, 2);
+      spec.noiseProb = testing::randomDouble();
+      test(spec);
     }
   }
 
@@ -79,14 +75,10 @@ namespace obsidian
     for (uint u :
     { 0, 5, 20 })
     {
-      for (uint v :
-      { 1, 5, 20 })
-      {
-        FieldObsResults result;
-        result.likelihood = testing::randomDouble();
-        result.readings = testing::randomNVecXd(u, v);
-        test(result);
-      }
+      FieldObsResults result;
+      result.likelihood = testing::randomDouble();
+      result.readings = testing::randomMatrix(u, 1);
+      test(result);
     }
   }
 }
