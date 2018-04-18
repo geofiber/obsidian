@@ -40,12 +40,12 @@ H_IGRF = np.array([1.419e+2, 2.8739e+4, -4.62667e+4])
 
 config_layers = pd.DataFrame(
         # layer name, layer type, (min, max) depth in m, (nx, ny) control pts
-        [('Layer A', 'normal', -0.5e+3, 0.5e+3, 2, 2),
-         ('Layer B',  'normal', 0.5e+3, 1.0e+3, 1, 1)],
+        [('Layer A', 'normal',  -1.0e+0, 1.0e+0, 1, 1),
+         ('Layer B',  'normal', -3.0e+3, 3.0e+3, 1, 2)],
         columns=['name','type','zmin','zmax','nx','ny'])
 
 config_params = { 'lng': 116.10, 'lat': -24.85, 'L': 2.0e+4,
-                  'maxdepth': 1.0e+4, 'layers': config_layers,
+                  'maxdepth': 0.1e+4, 'layers': config_layers,
                   'H_IGRF': H_IGRF, }
 
 # Rock properties
@@ -189,6 +189,19 @@ def main():
     generate_rock_data(layer_rockprops, source_petrofn, config_petrofn)
     rockpriormu, rockpriorcov = compute_rock_priors(config_petrofn)
 
+    # Read prospector NPZ
+    prospect = np.load('synthetic.npz')
+    gravsynth = prospect['gravReadings'][0]
+    gravsynth -= np.mean(gravsynth)
+    # gravsynth += 0.05*np.std(gravsynth)*np.random.normal(size=gravsynth.shape)
+    with open('gravsynth.csv', 'w') as csvfile:
+        csvfile.write(pd.DataFrame(gravsynth).to_csv(index=False, header=False))
+    magsynth = prospect['magReadings'][0]
+    magsynth -= np.mean(magsynth)
+    # magsynth += 0.05*np.std(magsynth)*np.random.normal(size=magsynth.shape)
+    with open('magsynth.csv', 'w') as csvfile:
+        csvfile.write(pd.DataFrame(magsynth).to_csv(index=False, header=False))
+
     # Read in grav data and convert to the standard format.
     # For Hugo's data, divide by 10 to convert from um/s^2 to mgal.
     gravdata = pd.read_csv(gravdata_fn, names=sensor_colnames,
@@ -202,8 +215,9 @@ def main():
     # Read in field observation data and convert to the standard format.
     fielddata = generate_field_data(layer_rockprops, fielddata_fn, fieldsrc_fn)
 
-    # Fill remaining fields in config_params
+    return
 
+    # Fill remaining fields in config_params
     config_params.update({ 'grav_data': gravdata,
                            'mag_data': magdata,
                            'field_data': fielddata,
