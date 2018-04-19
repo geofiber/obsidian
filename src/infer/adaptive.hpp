@@ -111,11 +111,18 @@ namespace stateline
       static std::mt19937 generator(rd());
       static std::normal_distribution<> rand; // Standard normal
 
+      // RS 2018/04/19:  Transform sigma to the Crank-Nicholson "step size"
+      // parameter rho.  This will allow the chains to adapt the step size.
+      // While technically 0 < rho < 1, mapping -1 < rho < 1 should be good
+      // enough since the sign of rho won't affect the proposal density.
+      double F = exp(sigma);
+      double rho = (F - 1.0/F)/(F + 1.0/F);
+
       Eigen::VectorXd proposal(state.rows());
       Eigen::VectorXd epsilon_vec = prior.sample(generator);
       for (int i = 0; i < proposal.rows(); i++) {
         double epsilon = epsilon_vec(i);
-        proposal(i) = (ro * state(i)) + std::pow(1 - std::pow(ro, 2.0), 0.5) * epsilon;
+        proposal(i) = std::sqrt(1 - rho*rho)*state(i) + rho*epsilon;
       }
 
       return proposal;
