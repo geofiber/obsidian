@@ -67,7 +67,8 @@ namespace obsidian
       Eigen::ArrayXd fitTerm = (input.sigLInv * X).array();
       double dataFit = fitTerm.pow(2.0).sum();
       double norm = theta.size() * log2PI;
-      return -0.5 * (logDetSig + dataFit + norm);
+      double out = -0.5 * (logDetSig + dataFit + norm);
+      return out;
     }
 
     double uniformLogPDF(const Eigen::MatrixXd& theta, const MultiGaussian& input, const Eigen::MatrixXd& thetaMins,

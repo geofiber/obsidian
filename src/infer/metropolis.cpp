@@ -10,6 +10,7 @@
 //!
 
 #include "infer/metropolis.hpp"
+#include <glog/logging.h>
 
 namespace stateline
 {
@@ -24,7 +25,7 @@ namespace stateline
       if (std::isinf(newState.energy))
         return false;
       double deltaEnergy = newState.energy - oldState.energy;
-      double probToAccept = std::min(1.0, std::exp(-1.0 * beta * deltaEnergy));
+      double probToAccept = std::min(1.0, std::exp(-1.0 * beta * (deltaEnergy + newState.logDensityRatio)));
 
       // Roll the dice to determine acceptance
       bool accept = rand(generator) < probToAccept;

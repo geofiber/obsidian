@@ -13,6 +13,9 @@
 #include <random>
 #include <functional>
 #include <Eigen/Core>
+#include "prior/world.hpp"
+#include "prior/prior.hpp"
+#include "distrib/multigaussian.hpp"
 
 namespace stateline
 {
@@ -86,9 +89,49 @@ namespace stateline
       for (int i = 0; i < proposal.rows(); i++)
         proposal(i) = state(i) + rand(generator) * sigma;
 
-      return bouncyBounds(proposal, min, max);
+      //return bouncyBounds(proposal, min, max);
+      return proposal;
     };
     
+
+    //! Crank-Nicolson proposal function.
+    //! 
+    //! \param state The current state of the chain
+    //! \param sigma The standard deviation of the distribution (step size of the proposal)
+    //! \param min The minimum bound of theta 
+    //! \param max The maximum bound of theta 
+    //! \returns The new proposed theta
+    //!
+    Eigen::VectorXd crankNicolsonProposal(const Eigen::VectorXd &state, double sigma, 
+	double ro, obsidian::GlobalPrior& prior
+    )
+    {
+      // Random number generators
+      static std::random_device rd;
+      static std::mt19937 generator(rd());
+      static std::normal_distribution<> rand; // Standard normal
+
+      Eigen::VectorXd proposal(state.rows());
+      Eigen::VectorXd epsilon_vec = prior.sample(generator);
+      for (int i = 0; i < proposal.rows(); i++) {
+        double epsilon = epsilon_vec(i);
+        proposal(i) = (ro * state(i)) + std::pow(1 - std::pow(ro, 2.0), 0.5) * epsilon;
+      }
+
+      return proposal;
+    };
     
+     double gaussianProposalPDF(
+	const Eigen::VectorXd& theta, const double sigma, const Eigen::VectorXd& thetaMins,
+	const Eigen::VectorXd& thetaMaxs
+    )
+    {
+	double n = theta.size();
+	Eigen::MatrixXd Sigma = Eigen::MatrixXd::Identity(n, n) * sigma;
+	obsidian::distrib::MultiGaussian input(theta, Sigma);
+	double density = obsidian::distrib::logPDF(theta, input, thetaMins, thetaMaxs);
+	return density;
+    };
+
   }
 }

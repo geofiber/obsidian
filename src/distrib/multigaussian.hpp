@@ -54,6 +54,8 @@ namespace obsidian
     //! 
     MultiGaussian coupledGaussianBlock(const Eigen::MatrixXd& mean, double coupledSD, double decoupledSD);
 
+    double crankNicolsonLogPDF(const Eigen::VectorXd& theta, const MultiGaussian& input, const Eigen::VectorXd& thetaMin, const Eigen::VectorXd& thetaMax, const double& ro);
+
     //! Compute the log PDF of a multivariate Gaussian distribution
     double logPDF(const Eigen::MatrixXd& theta, const MultiGaussian& input, const Eigen::MatrixXd& thetaMin,
                   const Eigen::MatrixXd& thetaMax);

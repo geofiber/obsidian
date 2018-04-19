@@ -1,19 +1,21 @@
 #include "prior/world.hpp"
 #include <Eigen/Core>
 #include <glog/logging.h>
+#include <cassert>
+#include <limits>
+#include <iostream>
 
 namespace obsidian
 {
   namespace prior
   {
-
     uint prod(std::pair<uint, uint> in)
     {
       return in.first * in.second;
     }
 
     // get the number of partition elements
-    uint WorldParamsPrior::size()
+    uint WorldParamsPrior::size() const
     {
       // Just get the size of the objects
       uint size = 0;
@@ -59,9 +61,8 @@ namespace obsidian
       return thetaMax;
     }
 
-
     // used by sample... almost the same as size()
-    Eigen::VectorXd WorldParamsPrior::deconstruct(const WorldParams& params)
+    Eigen::VectorXd WorldParamsPrior::deconstruct(const WorldParams& params) const
     {
       uint nLayers = propertyPrior.size();
       CHECK_EQ(nLayers, params.rockProperties.size());
@@ -104,7 +105,7 @@ namespace obsidian
     }
 
     // build a WorldParams object from a flat vector
-    WorldParams WorldParamsPrior::reconstruct(const Eigen::VectorXd & theta)
+    WorldParams WorldParamsPrior::reconstruct(const Eigen::VectorXd & theta) const
     {
       uint nLayers = propertyPrior.size();
       CHECK_EQ(ctrlptPrior.size(), nLayers);
@@ -155,24 +156,62 @@ namespace obsidian
       return wParams;
     }
 
-    Eigen::VectorXd WorldParamsPrior::sample(std::mt19937 &gen)
+    Eigen::VectorXd WorldParamsPrior::sample(std::mt19937 &gen) const
     {
       std::vector<bool> uniformFlags;
       for (auto i : classes)
         uniformFlags.push_back(i == BoundaryClass::Warped);
-      WorldParams theta = { distrib::drawVectorFrom(propertyPrior, gen, propMins, propMaxs), distrib::drawFrom(ctrlptPrior, gen, ctrlptMins,
-                                                                                                               ctrlptMaxs, uniformFlags) };
-      return deconstruct(theta);
+      
+      // RS 2018/03/22:  Keep drawing thetas until we get a parameter vector
+      // with all the components within the given hard bounds.  Try at most
+      // max_inbound_sample_tries times to avoid infinite loops.
+      uint max_inbounds_sample_tries = 1000;
+      class ThetaBoundsError { };
+      uint i;
+      Eigen::VectorXd theta_draw;
+
+      for (i = 0; i < max_inbounds_sample_tries; i++)
+      {
+        WorldParams prior_draw = { distrib::drawVectorFrom(propertyPrior, gen, propMins, propMaxs),
+                                   distrib::drawFrom(ctrlptPrior, gen, ctrlptMins, ctrlptMaxs, uniformFlags) };
+        theta_draw = deconstruct(prior_draw);
+        bool is_good_draw = 1;
+        for (uint i = 0; i < theta_draw.size(); i++)
+          if (theta_draw[i] < thetaMin[i] or theta_draw[i] > thetaMax[i])
+            is_good_draw = 0;
+        if (is_good_draw) return theta_draw;
+      }
+
+      // We didn't get a good draw, so throw an exception
+      if (i == max_inbounds_sample_tries)
+      {
+        std::cout << "FATAL: couldn't draw valid prior vector in" << max_inbounds_sample_tries << "tries";
+        throw ThetaBoundsError { };
+      }
+      return theta_draw;
     }
 
     // Evaluate log likelihood of theta under this prior
-    double WorldParamsPrior::evaluatePDF(const Eigen::VectorXd& theta)
+    double WorldParamsPrior::evaluatePDF(const Eigen::VectorXd& theta) const
     {
 
       uint nLayers = propertyPrior.size();
       CHECK_EQ(ctrlptPrior.size(), nLayers);
       // Rebuild the vector into an object
       WorldParams wParams = reconstruct(theta);
+
+      // RS 2018/03/22:  If any of the thetas are out of bounds, this world
+      // has basically zero probability.  This is a blunt instrument, but it
+      // is needed for any MCMC proposal that isn't an independent Metropolis
+      // random walk to obey detailed balance at the parameter bounds.
+      // I'm not sure if we're IEEE 754 compliant but otherwise we'll have to
+      // pick some arbitrary large negative number which I could imagine
+      // giving unexpected results.  We'll also need range checks to ensure
+      // we don't *start* chains in regions of zero probability.
+      static_assert(std::numeric_limits<float>::is_iec559, "IEEE 754 required");
+      for (uint i = 0; i < theta.size(); i++)
+        if (theta[i] < thetaMin[i] or theta[i] > thetaMax[i])
+          return -std::numeric_limits<double>::infinity();
 
       // Now we go and check each of these against their prior
       double logPDF = 0.0;

@@ -15,7 +15,7 @@ namespace obsidian
 //  {
 //  }
 
-  GlobalParams GlobalPrior::reconstruct(const Eigen::VectorXd& theta)
+  GlobalParams GlobalPrior::reconstruct(const Eigen::VectorXd& theta) const
   {
     GlobalParams g;
     uint start = 0;
@@ -24,7 +24,7 @@ namespace obsidian
     return g;
   }
 
-  double GlobalPrior::evaluate(const Eigen::VectorXd& theta)
+  double GlobalPrior::evaluate(const Eigen::VectorXd& theta) const
   {
     double logPDF = 0;
     uint start = 0;
@@ -35,7 +35,7 @@ namespace obsidian
     return logPDF;
   }
 
-  Eigen::VectorXd GlobalPrior::sample(std::mt19937 &gen)
+  Eigen::VectorXd GlobalPrior::sample(std::mt19937 &gen) const
   {
     Eigen::VectorXd worldTheta = world.sample(gen);
     // Concatenate
@@ -43,7 +43,7 @@ namespace obsidian
     return totalTheta;
   }
 
-  uint GlobalPrior::size()
+  uint GlobalPrior::size() const
   {
     uint totalSize = 0;
     totalSize += world.size();

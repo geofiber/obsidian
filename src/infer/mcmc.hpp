@@ -24,6 +24,7 @@
 #include "app/settings.hpp"
 #include "infer/chainarray.hpp"
 #include "infer/diagnostics.hpp"
+#include "distrib/multigaussian.hpp"
 #include "comms/transport.hpp"
 
 namespace stateline
@@ -89,10 +90,11 @@ namespace stateline
       //! \param policy Async policy to evaluate states.
       //! \param initialStates Initial chain states. Ignored if recovering.
       //! \param propFn The proposal function.
+      //! \param propPDFFn The proposal PDF function.
       //! \param numSeconds The number of seconds to run the MCMC for.
       //!
-      template<class AsyncPolicy, class PropFn>
-      void run(AsyncPolicy &policy, const std::vector<Eigen::VectorXd>& initialStates, PropFn &propFn, uint numSeconds)
+      template<class AsyncPolicy, class PropFn, class PropPdfFn>
+      void run(AsyncPolicy &policy, const std::vector<Eigen::VectorXd>& initialStates, PropFn &propFn, PropPdfFn &propPdfFn, uint numSeconds)
       {
         using namespace std::chrono;
 
@@ -151,7 +153,10 @@ namespace stateline
           bool isColdestChainInStack = id % chains_.numChains() == 0;
 
           // Handle the new proposal and add a new state to the chain
-          State propState { propStates_.row(id), energy, chains_.beta(id), false, SwapType::NoAttempt };
+	  double proposalDensity = propPdfFn(propStates_.row(id), sigmas_[id]);
+	  double lastsampleDensity = propPdfFn(chains_.lastState(id).sample, sigmas_[id]);
+	  double logDensityRatio = proposalDensity - lastsampleDensity;
+          State propState { propStates_.row(id), energy, logDensityRatio, chains_.beta(id), false, SwapType::NoAttempt };
           bool propAccepted = chains_.append(id, propState);
           lengths_[id] += 1;
           updateAccepts(id, propAccepted);
@@ -264,7 +269,10 @@ namespace stateline
             auto result = policy.retrieve();
             uint id = result.first;
             double energy = result.second;
-            State propState { propStates_.row(id), energy, chains_.beta(id), false, SwapType::NoAttempt };
+	    double proposalDensity = propPdfFn(propStates_.row(id), sigmas_[id]);
+	    double lastsampleDensity = propPdfFn(chains_.lastState(id).sample, sigmas_[id]);
+	    double logDensityRatio = proposalDensity - lastsampleDensity;
+            State propState { propStates_.row(id), energy, logDensityRatio, chains_.beta(id), false, SwapType::NoAttempt };
             bool propAccepted = chains_.append(id, propState);
             lengths_[id] += 1;
             updateAccepts(id, propAccepted);
@@ -334,8 +342,9 @@ namespace stateline
         auto result = policy.retrieve();
         uint id = result.first;
         double energy = result.second;
+        double logDensityRatio = 1.0;
         State s
-        { initialStates[id], energy, chains_.beta(id), true, SwapType::NoAttempt};
+        { initialStates[id], energy, logDensityRatio, chains_.beta(id), true, SwapType::NoAttempt};
         chains_.initialise(id, s);
       }
     }

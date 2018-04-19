@@ -97,6 +97,10 @@ namespace stateline
     //! which flushes to disk old samples when the cache is full.
     uint cacheLength;
 
+    std::string distribution;
+
+    double ro;
+
     //! The initial proposal width factor. Initially, the proposal width of
     //! a chain will be initialSigmaFactor times the proposal width of the
     //! chain below (colder) than it.
