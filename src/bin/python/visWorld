@@ -46,8 +46,8 @@ class Data(object):
         self.boundaries = [raw['boundary'+str(k)]for k in range(self.nlayers)]
         self.samples = self.boundaries[0].shape[0]
         #reshape these key layers
-        newshapeVox = (-1, self.resolution[2], self.resolution[1],self.resolution[0])
-        newshapeSurf = (-1, self.resolution[1], self.resolution[0])
+        newshapeVox = np.array((-1, self.resolution[2], self.resolution[1], self.resolution[0]), dtype=int)
+        newshapeSurf = np.array((-1, self.resolution[1], self.resolution[0]), dtype=int)
         self.layers = [k.reshape(newshapeVox, order='f') for k in self.layers]
         self.properties = [k.reshape(newshapeVox, order='f') for k in self.properties]
         self.boundaries = [k.reshape(newshapeSurf, order='f') for k in self.boundaries]
