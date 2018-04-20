@@ -49,7 +49,6 @@ namespace obsidian
       Eigen::MatrixXd transitions = world::getTransitions(cache.boundaryInterpolation, world, cache.query); // mqueries (mlayer) x nlocations
       FieldObsResults results;
       results.readings.resize(spec.locations.rows());
-      LOG(INFO) << "shape(transitions) = (" << transitions.rows() << ", " << transitions.cols() << ")";
       for (uint location = 0; location < spec.locations.rows(); location++)
       {
         // Count down through the layers.  The transition boundaries are lower
@@ -58,14 +57,12 @@ namespace obsidian
         results.readings[location] = 0;
         for (int layer = 0; layer < transitions.rows(); layer++)
         {
-          LOG(INFO) << "location, layer, transition = " << location << "," << layer << "," << transitions(layer, location);
           if (transitions(layer, location) > transitions(0, location))
           {
             results.readings[location] = layer;
             break;
           }
         }
-        LOG(INFO) << "results.readings[" << location << "] = " << results.readings[location];
       }
       return results;
     }
