@@ -43,6 +43,7 @@ sensor_colnames = ['id', 'val', 'lat', 'lng']
 
 # Ambient magnetic field from the IGRF model, which can be queried at
 #     https://www.ngdc.noaa.gov/geomag-web/#igrfwmm
+# Components (in nanoTesla): east, north, down
 H_IGRF = np.array([1.419e+2, 2.8739e+4, -4.62667e+4])
 
 config_layers = pd.DataFrame(
