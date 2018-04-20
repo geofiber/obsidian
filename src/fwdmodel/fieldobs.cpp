@@ -10,6 +10,7 @@
 
 #include "fwd.hpp"
 #include "world/voxelise.hpp"
+#include <glog/logging.h>
 
 namespace obsidian
 {
@@ -26,6 +27,7 @@ namespace obsidian
     FieldObsCache generateCache<ForwardModel::FIELDOBS>(const std::vector<world::InterpolatorSpec>& boundaryInterpolation,
                                                                 const WorldSpec& worldSpec, const FieldObsSpec& spec)
     {
+      LOG(INFO) << "Caching field obs parameters...";
       return
       {
         boundaryInterpolation,
@@ -47,21 +49,23 @@ namespace obsidian
       Eigen::MatrixXd transitions = world::getTransitions(cache.boundaryInterpolation, world, cache.query); // mqueries (mlayer) x nlocations
       FieldObsResults results;
       results.readings.resize(spec.locations.rows());
+      LOG(INFO) << "shape(transitions) = (" << transitions.rows() << ", " << transitions.cols() << ")";
       for (uint location = 0; location < spec.locations.rows(); location++)
       {
         // Count down through the layers.  The transition boundaries are lower
         // limits for the rock layers, so the sensor result will be the
         // smallest positive depth.
-        uint minlayer = 0;
-        double minz = 1e+8;
-        for (uint layer = 0; layer < transitions.rows(); layer++)
-          if (transitions(layer, location) > 0 &&
-              transitions(layer, location) < minz)
+        results.readings[location] = 0;
+        for (int layer = 0; layer < transitions.rows(); layer++)
+        {
+          LOG(INFO) << "location, layer, transition = " << location << "," << layer << "," << transitions(layer, location);
+          if (transitions(layer, location) > transitions(0, location))
           {
-            minz = transitions(layer, location);
-            minlayer = layer;
+            results.readings[location] = layer;
+            break;
           }
-        results.readings[location] = minlayer;
+        }
+        LOG(INFO) << "results.readings[" << location << "] = " << results.readings[location];
       }
       return results;
     }
