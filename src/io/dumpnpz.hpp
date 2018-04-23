@@ -73,10 +73,12 @@ namespace obsidian
     uint nMag = results[0].mag.readings.size();
     uint nMt = results[0].mt.readings.size();
     uint nThermal = results[0].therm.readings.size();
+    uint nField = results[0].field.readings.size();
 
     Eigen::MatrixXd gravReadings(size, nGrav);
     Eigen::MatrixXd magReadings(size, nMag);
     Eigen::MatrixXd thermReadings(size, nThermal);
+    Eigen::MatrixXd fieldReadings(size, nField);
     std::vector<std::vector<Eigen::VectorXcd>> mtReadings;
     Eigen::MatrixXd nFreqs(size, nMt);
     uint maxFreqs = 0;
@@ -96,6 +98,7 @@ namespace obsidian
         maxFreqs = std::max(freqs, maxFreqs);
       }
       mtReadings.push_back(stateMt);
+      fieldReadings.row(i) = results[i].field.readings;
     }
     Eigen::MatrixXcd mtReadingMatrix = Eigen::MatrixXcd::Zero(size, nMt * maxFreqs * 4);
     for (uint i = 0; i < size; i++)
@@ -113,6 +116,7 @@ namespace obsidian
     writer.write<double>("thermReadings", thermReadings);
     writer.write<std::complex<double>>("mtReadings", mtReadingMatrix);
     writer.write<double>("mtNumFreqs", nFreqs);
+    writer.write<int>("fieldReadings", fieldReadings.cast<int>());
   }
 
   void dumpLikelihoodNPZ(io::NpzWriter& writer, const std::vector<std::vector<double>>& lh)

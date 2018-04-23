@@ -26,7 +26,8 @@ namespace obsidian
       parseSpec<MtAnisoSpec>(vm, sensorsEnabled),
       parseSpec<Seismic1dSpec>(vm, sensorsEnabled),
       parseSpec<ContactPointSpec>(vm, sensorsEnabled),
-      parseSpec<ThermalSpec>(vm, sensorsEnabled)};
+      parseSpec<ThermalSpec>(vm, sensorsEnabled),
+      parseSpec<FieldObsSpec>(vm, sensorsEnabled)};
   }
   template<>
   GlobalParams parseSimulationParams(const po::variables_map& vm, const std::set<ForwardModel>& sensorsEnabled)
@@ -38,7 +39,8 @@ namespace obsidian
       parseSimulationParams<MtAnisoParams>(vm, sensorsEnabled),
       parseSimulationParams<Seismic1dParams>(vm, sensorsEnabled),
       parseSimulationParams<ContactPointParams>(vm, sensorsEnabled),
-      parseSimulationParams<ThermalParams>(vm, sensorsEnabled)
+      parseSimulationParams<ThermalParams>(vm, sensorsEnabled),
+      parseSimulationParams<FieldObsParams>(vm, sensorsEnabled)
     };
   }
   template<>
@@ -50,7 +52,8 @@ namespace obsidian
       parseSensorReadings<MtAnisoResults>(vm, sensorsEnabled),
       parseSensorReadings<Seismic1dResults>(vm, sensorsEnabled),
       parseSensorReadings<ContactPointResults>(vm, sensorsEnabled),
-      parseSensorReadings<ThermalResults>(vm, sensorsEnabled)
+      parseSensorReadings<ThermalResults>(vm, sensorsEnabled),
+      parseSensorReadings<FieldObsResults>(vm, sensorsEnabled)
     };
   }
 
@@ -65,7 +68,8 @@ namespace obsidian
       parsePrior<prior::MtAnisoParamsPrior>(vm, sensorsEnabled),
       parsePrior<prior::Seismic1dParamsPrior>(vm, sensorsEnabled),
       parsePrior<prior::ContactPointParamsPrior>(vm, sensorsEnabled),
-      parsePrior<prior::ThermalParamsPrior>(vm, sensorsEnabled)
+      parsePrior<prior::ThermalParamsPrior>(vm, sensorsEnabled),
+      parsePrior<prior::FieldObsParamsPrior>(vm, sensorsEnabled)
     };
 
   }

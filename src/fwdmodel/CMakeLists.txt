@@ -31,6 +31,9 @@ REGISTER_UNIT_TESTS(test-fwd-seismic)
 # Contact point forward model
 ADD_LIBRARY(fwd-contactpoint contactpoint.cpp)
 
+# Field observation forward model
+ADD_LIBRARY(fwd-fieldobs fieldobs.cpp)
+
 ADD_EXECUTABLE (test-fwd-contactpoint testcontactpoint.cpp)
 TARGET_LINK_LIBRARIES(test-fwd-contactpoint world ${obsidianAlgoLibraries} ${obsidianBaseLibraries})
 REGISTER_UNIT_TESTS(test-fwd-contactpoint)
