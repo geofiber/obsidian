@@ -18,3 +18,4 @@
 #include "mt1d.cpp"
 #include "contactpoint.cpp"
 #include "thermal.cpp"
+#include "fieldobs.cpp"

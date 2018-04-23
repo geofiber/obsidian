@@ -197,6 +197,7 @@ SET (obsidianAlgoLibraries distrib
                       fwd-seismic
                       fwd-contactpoint
                       fwd-thermal
+                      fwd-fieldobs
                       world
                       prior
                       chainarray

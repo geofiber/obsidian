@@ -20,6 +20,7 @@
 #include "datatype/seismic.hpp"
 #include "datatype/contactpoint.hpp"
 #include "datatype/thermal.hpp"
+#include "datatype/fieldobs.hpp"
 
 namespace obsidian
 {
@@ -33,6 +34,7 @@ namespace obsidian
     Seismic1dSpec s1d;
     ContactPointSpec cpoint;
     ThermalSpec therm;
+    FieldObsSpec field;
   };
 
   struct GlobalParams
@@ -44,6 +46,7 @@ namespace obsidian
     Seismic1dParams s1d;
     ContactPointParams cpoint;
     ThermalParams therm;
+    FieldObsParams field;
   };
 
   struct GlobalResults
@@ -54,6 +57,7 @@ namespace obsidian
     Seismic1dResults s1d;
     ContactPointResults cpoint;
     ThermalResults therm;
+    FieldObsResults field;
   };
 
   struct GlobalCache
@@ -64,6 +68,7 @@ namespace obsidian
     Seismic1dCache s1d;
     ContactPointCache cpoint;
     ThermalCache therm;
+    FieldObsCache field;
   };
 
   //! For accessing subfields of global results.
@@ -93,6 +98,10 @@ namespace obsidian
   template<> inline ThermalResults & globalResult<GlobalResults, ThermalResults>(GlobalResults&g)
   {
     return g.therm;
+  }
+  template<> inline FieldObsResults & globalResult<GlobalResults, FieldObsResults>(GlobalResults&g)
+  {
+    return g.field;
   }
 
 } // namespace obsidian

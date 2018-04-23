@@ -36,12 +36,14 @@ config_petrofn = _datadir + "Petrophysics_Gascoyne.csv"
 ground_truthfn = _datadir + "Formation_data_Gascoyne.csv"
 gravdata_fn = _datadir + "gravity_400m_Gascoyne.txt"
 magdata_fn = _datadir + "mag_TMI_gascoyne.txt"
+fielddata_fn = _datadir + "Formation_data_Gascoyne.csv"
 
 # Column format for sensor files
 sensor_colnames = ['id', 'val', 'lat', 'lng']
 
 # Ambient magnetic field from the IGRF model, which can be queried at
 #     https://www.ngdc.noaa.gov/geomag-web/#igrfwmm
+# Components (in nanoTesla): east, north, down
 H_IGRF = np.array([1.419e+2, 2.8739e+4, -4.62667e+4])
 
 config_layers = pd.DataFrame(
@@ -117,6 +119,27 @@ def compute_rock_priors(rockfname):
             rockpriorcov[f].iloc[:2,:2] = np.cov(dc.T)
     return rockpriormu, rockpriorcov
 
+def convert_ground_truth(fname):
+    """
+    Reads Hugo's formation data file and converts to a standard format.
+    :param fname:  file with formation boundary information
+    """
+    fieldcols = ['id', 'site_id', 'lat', 'lng', 'form_name',
+                 'unit_name', 'geochron', 'sample_id', 'age', 'age_err']
+    fieldtypes = [str, str, float, float, str, str, str, str, float, float]
+    dtype = { fc: ft for fc, ft in zip(fieldcols, fieldtypes) }
+    fielddata = pd.read_csv(fname, names=fieldcols,
+                            dtype=dtype, na_values=['-'], skiprows=1)
+
+    # Calculate a scalar index to represent the layer boundaries, based on
+    # what we've got in our data files so far.  Add as 'val' column to data.
+    fieldval_lookup = { fn: i for i, fn in enumerate(config_layers.name) }
+    fieldval = pd.Series([fieldval_lookup.get(fn, -1) for fn in fielddata.form_name])
+    fielddata = pd.concat([fielddata, fieldval], axis=1)
+    fielddata.rename(columns={0:'val'}, inplace=True)
+
+    return fielddata
+
 def display_ground_truth(lng, lat, L):
     """
     Displays geological ground-truth labels in a given area.  Put here
@@ -160,10 +183,14 @@ def main():
     magdata = pd.read_csv(magdata_fn, names=sensor_colnames,
                           dtype=float, skiprows=1)
 
+    # Read in field observation data and convert to the standard format.
+    fielddata = convert_ground_truth(fielddata_fn)
+
     # Fill remaining fields in config_params
 
     config_params.update({ 'grav_data': gravdata,
                            'mag_data': magdata,
+                           'field_data': fielddata,
                            'rockpriormu': rockpriormu,
                            'rockpriorcov': rockpriorcov, })
 

@@ -14,7 +14,8 @@ ADD_LIBRARY(input input.cpp
                   mt.cpp
                   seismic.cpp
                   contactpoint.cpp
-                  thermal.cpp)
+                  thermal.cpp
+                  fieldobs.cpp)
 
 SET(TESTLIBS ${obsidianAlgoLibraries} ${obsidianServerLibraries} ${obsidianServerLibraries} ${obsidianBaseLibraries})
 
@@ -49,3 +50,7 @@ REGISTER_UNIT_TESTS(test-input-contactpoint)
 ADD_EXECUTABLE(test-input-thermal testthermal.cpp)
 TARGET_LINK_LIBRARIES(test-input-thermal ${TESTLIBS} )
 REGISTER_UNIT_TESTS(test-input-thermal)
+
+ADD_EXECUTABLE(test-input-fieldobs testfieldobs.cpp)
+TARGET_LINK_LIBRARIES(test-input-fieldobs ${TESTLIBS} )
+REGISTER_UNIT_TESTS(test-input-fieldobs)

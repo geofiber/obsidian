@@ -71,11 +71,15 @@ def write_sensor_data(data, lng, lat, L, stag, rhdr="", shdr="", zval=-0.5):
     idx = np.all([np.abs(x) < 0.5*L, np.abs(y) < 0.5*L], axis=0)
     x = x[idx] + 0.5*L
     y = y[idx] + 0.5*L
-    z = np.ones(x.shape) * zval
     v = data.val.values[idx]
 
     # Come up with transformed DataFrames so we can just use to_csv.
-    sdata = pd.DataFrame(np.array([x, y, z])).T
+    # If we're doing FieldObs sensors those are understood to be at z = 0.
+    if zval is None:
+        sdata = pd.DataFrame(np.array([x, y])).T
+    else:
+        z = np.ones(x.shape) * zval
+        sdata = pd.DataFrame(np.array([x, y, z])).T
     rdata = pd.DataFrame(np.array([v])).T
 
     # Write Readings file
@@ -91,7 +95,7 @@ def write_sensor_data(data, lng, lat, L, stag, rhdr="", shdr="", zval=-0.5):
         outfile.write(sdata.to_csv(index=False, header=False))
 
 def write_config(lng, lat, L, maxdepth, layers, H_IGRF,
-                 grav_data, mag_data, rockpriormu, rockpriorcov):
+                 grav_data, mag_data, field_data, rockpriormu, rockpriorcov):
     """
     Write a suite of configuration files for Obsidian describing the
     priors and settings for a likely configuration.
@@ -105,6 +109,7 @@ def write_config(lng, lat, L, maxdepth, layers, H_IGRF,
         magnetic field, evaluated via the IGRF model
     :param grav_data:  pd.DataFrame with columns (id, val, lat, lng)
     :param mag_data:  pd.DataFrame with columns (id, val, lat, lng)
+    :param field_data:  pd.DataFrame with columns (id, val, lat, lng)
     :param rockpriormu:  hash, indexed by layer name, of pd.Series
         instances with mean of multivariate Gaussian rock property prior
         -- layer names must match "layers" parameter or code will crash
@@ -549,6 +554,34 @@ def write_config(lng, lat, L, maxdepth, layers, H_IGRF,
         "\n")
 
     # ------------------------------------------------------------------------
+    # Field observation sensors -- disabled at present
+
+    config_output += (
+        "######################\n"
+        "# Field Observations #\n"
+        "######################\n"
+        "# Section containing the variables for the geological field observation\n"
+        "# sensor and model\n"
+        "[fieldobs]\n"
+        "\n"
+        "\n"
+        "# Enable field observations as a sensor. If disabled, all other field\n"
+        "# observation inputs will be ignored.\n"
+        "enabled = false\n"
+        "\n"
+        "# CSV file containing a list of field observation sensor locations.\n"
+        "sensorLocations = fieldobsSensors.csv\n"
+        "\n"
+        "# CSV file containing the formations (layer boundary index) corresponding\n"
+        "# to each sensor location defined in the sensorLocations input file\n"
+        "sensorReadings = fieldobsReadings.csv\n"
+        "\n"
+        "# noise probability: The probability that a single visual identification of\n"
+        "# a formation (categorical layer index) will be incorrect\n"
+        "noiseProb = 0.01\n"
+        "\n")
+
+    # ------------------------------------------------------------------------
     # MCMC control settings and hyperparameters
 
     config_output += (
@@ -561,7 +594,7 @@ def write_config(lng, lat, L, maxdepth, layers, H_IGRF,
         "#The number of chains in a sequence of temperatures. The first chain has\n"
         "#temperature=1, and then all subsequent chains have a temperature equal to\n"
         "#initialTempFactor times the previous temperature.\n"
-        "chains = 16\n"
+        "chains = 20\n"
         "\n"
         "# The number of totally disconnected sets of chains. Total chains is the\n"
         "# product of the chains variable and the stacks variable. Different stacks are\n"
@@ -575,11 +608,11 @@ def write_config(lng, lat, L, maxdepth, layers, H_IGRF,
         "# The number of states added to the highest temperature chain before it\n"
         "# initiates a swap with the next coldest chain. This will propagate all the way\n"
         "# down to the lowest temperature chain.\n"
-        "swapInterval = 50\n"
+        "swapInterval = 25\n"
         "\n"
         "# the factor that defines the geometric progression of chain temperatures for\n"
         "# each stack. t_n+1 = t_n * initialTempFactor, with t_1 = 1\n"
-        "initialTempFactor = 1.1\n"
+        "initialTempFactor = 2.0\n"
         "\n"
         "# The swap rate that the chains are trying to reach. Note that 0.24 is optimal\n"
         "# for an infinite dimensional problem, 0.5 is optimal for a 1 dimensional\n"
@@ -603,7 +636,7 @@ def write_config(lng, lat, L, maxdepth, layers, H_IGRF,
         "# The time scale over which the adaption length diminishes. After 10 times this\n"
         "# value, the adaption rate in approximately half. Also is equal to the number\n"
         "# of states used to calculate the adapt and swap rates in a sliding window.\n"
-        "adaptionLength = 100000\n"
+        "adaptionLength = 20000\n"
         "\n"
         "# Then number of states computed before they are written to disk. Worst case\n"
         "# would be to lose this many states upon a hard crash of the obsidian server.\n"
@@ -918,3 +951,18 @@ def write_config(lng, lat, L, maxdepth, layers, H_IGRF,
             "# if they don't. Positive Z values are going into the ground.\n\n")
     write_sensor_data(mag_data, lng, lat, L,
                       stag='mag', rhdr=rhdr, shdr=shdr, zval=-0.5)
+
+    # ------------------------------------------------------------------------
+    # Field observation sensor
+
+    rhdr = ("# FieldObsReadings: This gives a list of the readings from the sensors\n"
+            "# in the FieldObsSensors file. They are assumed to be visual observations\n"
+            "# of formations at the surface (categorical, layer boundary index values).\n"
+            "# A value of -1 indicates observation of a layer not listed in the prior.\n")
+    shdr = ("# FieldObsSensors: This file gives a list of location for geological\n"
+            "# field observations. The columns are x,y in metres; these are not offsets\n"
+            "# from the world boundaries, so if your world doesn't start from zero,\n"
+            "# be careful that the sensors are actually placed inside the world.\n"
+            "# An error should be flagged if they don't.\n\n")
+    write_sensor_data(field_data, lng, lat, L,
+                      stag='fieldobs', rhdr=rhdr, shdr=shdr, zval=None)
