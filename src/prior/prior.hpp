@@ -30,6 +30,7 @@
 #include "prior/seismic.hpp"
 #include "prior/contactpoint.hpp"
 #include "prior/thermal.hpp"
+#include "prior/fieldobs.hpp"
 #include <random>
 
 namespace obsidian
@@ -56,6 +57,7 @@ namespace obsidian
     prior::Seismic1dParamsPrior s1d;
     prior::ContactPointParamsPrior cpt;
     prior::ThermalParamsPrior thr;
+    prior::FieldObsParamsPrior fld;
   };
 
 } // namespace obsidian
