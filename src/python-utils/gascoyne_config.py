@@ -46,9 +46,9 @@ H_IGRF = np.array([1.419e+2, 2.8739e+4, -4.62667e+4])
 
 config_layers = pd.DataFrame(
         # layer name, layer type, (min, max) depth in m, (nx, ny) control pts
-        [('Moogie Metamorphics',  'normal', 0.0, 1.0e+4, 1, 1),
-         ('Halfway Gneiss',       'normal', 0.0, 1.0e+4, 5, 5),
-         ('Durlacher Supersuite', 'normal', 0.0, 1.0e+4, 5, 5),],
+        [('Moogie Metamorphics',  'normal', -1.0e+0, 1.0e+0, 1, 1),
+         ('Halfway Gneiss',       'warped', -1.0e+4, 1.0e+4, 5, 5),
+         ('Durlacher Supersuite', 'warped', -1.0e+4, 1.0e+4, 5, 5),],
         columns=['name','type','zmin','zmax','nx','ny'])
 
 config_params = { 'lng': 116.10, 'lat': -24.85, 'L': 2.0e+4,
