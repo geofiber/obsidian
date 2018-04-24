@@ -958,7 +958,7 @@ def write_config(lng, lat, L, maxdepth, layers, H_IGRF,
             "# boundaries so if your world doesn't start from zero be careful that the\n"
             "# sensors are actually placed inside the world. An error should be flagged if\n"
             "# if they don't. Positive Z values are going into the ground.\n\n")
-    write_sensor_data(mag_data, lng, lat, L, axthin=5,
+    write_sensor_data(mag_data, lng, lat, L, axthin=4,
                       stag='mag', rhdr=rhdr, shdr=shdr, zval=-0.5)
 
     # ------------------------------------------------------------------------
