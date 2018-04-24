@@ -16,7 +16,7 @@ heartbeatTimeout=2000
 pollRate=0
 heartbeatRate=1000
 heartbeatPollRate=500
-heartbeatTimeout=2000
+heartbeatTimeout=120000
 
 [database]
 directory = chainDB
