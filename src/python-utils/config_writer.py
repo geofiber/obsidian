@@ -48,7 +48,8 @@ def select_volume(data, lng, lat, L):
     v = data.val.values[idx]
     return x, y, v
 
-def write_sensor_data(data, lng, lat, L, stag, rhdr="", shdr="", zval=-0.5):
+def write_sensor_data(data, lng, lat, L, stag,
+                      rhdr="", shdr="", zval=-0.5, axthin=1):
     """
     Given a dataframe with sensor readings at (lng, lat) locations,
     write output to Obsidian-readable "Readings" and "Sensors" files.
@@ -63,6 +64,7 @@ def write_sensor_data(data, lng, lat, L, stag, rhdr="", shdr="", zval=-0.5):
     :param rhdr:  string header to write to top of Readings file
     :param shdr:  string header to write to top of Sensors file
     :param zval:  depth of sensors (assumed constant, +z is down)
+    :param axthin:  int, take every (axthin)th reading along each axis
     """
     # Project all latitudes and longitudes to Web Mercator coordinates,
     # selecting only those measurements lying in the volume to render.
@@ -72,6 +74,13 @@ def write_sensor_data(data, lng, lat, L, stag, rhdr="", shdr="", zval=-0.5):
     x = x[idx] + 0.5*L
     y = y[idx] + 0.5*L
     v = data.val.values[idx]
+
+    # Subsampling on a grid
+    if axthin > 1:
+        xkeep = sorted(np.unique(x))[::axthin]
+        ykeep = sorted(np.unique(y))[::axthin]
+        idx = np.array([xi in xkeep and yi in ykeep for xi, yi in zip(x, y)])
+        x, y, v = x[idx], y[idx], v[idx]
 
     # Come up with transformed DataFrames so we can just use to_csv.
     # If we're doing FieldObs sensors those are understood to be at z = 0.
@@ -662,7 +671,7 @@ def write_config(lng, lat, L, maxdepth, layers, H_IGRF,
         "\n"
         "# the factor that defines the geometric progression of chain sigmas for\n"
         "# each stack. s_n+1 = s_n * initialSigmaFactor, with s_1 = initialSigma\n"
-        "initialSigmaFactor = 1.1\n"
+        "initialSigmaFactor = 1.4\n"
         "\n"
         "# The maximum multiplicative factor by which sigma can adapt\n"
         "maxFactor = 1.25\n"
@@ -949,7 +958,7 @@ def write_config(lng, lat, L, maxdepth, layers, H_IGRF,
             "# boundaries so if your world doesn't start from zero be careful that the\n"
             "# sensors are actually placed inside the world. An error should be flagged if\n"
             "# if they don't. Positive Z values are going into the ground.\n\n")
-    write_sensor_data(mag_data, lng, lat, L,
+    write_sensor_data(mag_data, lng, lat, L, axthin=5,
                       stag='mag', rhdr=rhdr, shdr=shdr, zval=-0.5)
 
     # ------------------------------------------------------------------------
