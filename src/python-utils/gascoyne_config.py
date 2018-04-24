@@ -93,7 +93,7 @@ def compute_rock_priors(rockfname):
                  'log_Resist_x', 'log_Resist_y', 'log_Resist_z',
                  'Resist_Phase', 'PWaveVelocity']
     rockpriormu_def = pd.Series(
-            [ 2.7e+3, 1.5, 2.0, 2e-6, 0.0, 0.0, 0.0, 0.0, 4000 ],
+            [ 2.7e+3, -3.5, 2.0, 2e-6, 0.0, 0.0, 0.0, 0.0, 4000 ],
             index=rockprops)
     rockpriorcov_def = pd.DataFrame(np.diag(
             [ 5.0e+4, 0.5, 0.25, 1e-12, 1.0, 1.0, 1.0, 1.0, 2.5e+5 ]),
@@ -110,10 +110,10 @@ def compute_rock_priors(rockfname):
         if len(df) >= 5:
             # Grab last two columns -- susceptibility and density
             dc = np.zeros(shape=(df.shape[0], 2))
+            # Convert density to g/cm^3
+            dc[:,0] = 1.0*df.loc[:,'Density_g_cm-3']
             # Convert magnetic susceptibility to log scale
-            dc[:,0] = 1000.0*df.loc[:,'Density_g_cm-3']
-            # Convert density to kg/m^3
-            dc[:,1] = np.log10(df.loc[:,'Magnetic_susceptibility'])
+            dc[:,1] = np.log10(df.loc[:,'Magnetic_susceptibility']) - 5.0
             # Store sample covariance in hash
             rockpriormu[f].iloc[:2] = np.mean(dc, axis=0)
             rockpriorcov[f].iloc[:2,:2] = np.cov(dc.T)
