@@ -48,10 +48,9 @@ H_IGRF = np.array([1.419e+2, 2.8739e+4, -4.62667e+4])
 
 config_layers = pd.DataFrame(
         # layer name, layer type, (min, max) depth in m, (nx, ny) control pts
-        [('Durlacher Supersuite', 'normal', 0.0, 1.0e+4, 5, 5),
-         ('Moorarie Supersuite',  'normal', 0.0, 1.5e+4, 5, 5),
-         ('Moogie Metamorphics',  'normal', 0.0, 2.5e+4, 5, 5),
-         ('Halfway Gneiss',       'normal', 0.0, 2.5e+4, 5, 5),],
+        [('Moogie Metamorphics',  'normal', -1.0e+0, 1.0e+0, 1, 1),
+         ('Halfway Gneiss',       'warped', -1.0e+4, 1.0e+4, 5, 5),
+         ('Durlacher Supersuite', 'warped', -1.0e+4, 1.0e+4, 5, 5),],
         columns=['name','type','zmin','zmax','nx','ny'])
 
 config_params = { 'lng': 116.10, 'lat': -24.85, 'L': 2.0e+4,
@@ -94,7 +93,7 @@ def compute_rock_priors(rockfname):
                  'log_Resist_x', 'log_Resist_y', 'log_Resist_z',
                  'Resist_Phase', 'PWaveVelocity']
     rockpriormu_def = pd.Series(
-            [ 2.7e+3, 1.5, 2.0, 2e-6, 0.0, 0.0, 0.0, 0.0, 4000 ],
+            [ 2.7e+3, -3.5, 2.0, 2e-6, 0.0, 0.0, 0.0, 0.0, 4000 ],
             index=rockprops)
     rockpriorcov_def = pd.DataFrame(np.diag(
             [ 5.0e+4, 0.5, 0.25, 1e-12, 1.0, 1.0, 1.0, 1.0, 2.5e+5 ]),
@@ -111,10 +110,10 @@ def compute_rock_priors(rockfname):
         if len(df) >= 5:
             # Grab last two columns -- susceptibility and density
             dc = np.zeros(shape=(df.shape[0], 2))
+            # Convert density to g/cm^3
+            dc[:,0] = 1.0*df.loc[:,'Density_g_cm-3']
             # Convert magnetic susceptibility to log scale
-            dc[:,0] = 1000.0*df.loc[:,'Density_g_cm-3']
-            # Convert density to kg/m^3
-            dc[:,1] = np.log10(df.loc[:,'Magnetic_susceptibility'])
+            dc[:,1] = np.log10(df.loc[:,'Magnetic_susceptibility']) - 5.0
             # Store sample covariance in hash
             rockpriormu[f].iloc[:2] = np.mean(dc, axis=0)
             rockpriorcov[f].iloc[:2,:2] = np.cov(dc.T)
