@@ -14,6 +14,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import GPy
 
+runtag = 'gascoyne_v3'
+
 
 def autoshape(sensors):
     """
@@ -59,6 +61,7 @@ def plot_sensor(sensors, readings, chain, sample=None, units='unknown units'):
     x, y, z = sensors.T
     d = readings - readings.mean()
     if sample is None:
+        print "Averaged fwd models over chain of shape", chain.shape
         f = chain.mean(axis=0) - chain.mean()
     elif not isinstance(sample, int):
         print "ERROR:  sample = {} is of type {}, not int".format(
@@ -69,20 +72,16 @@ def plot_sensor(sensors, readings, chain, sample=None, units='unknown units'):
                 sample, -len(chain), len(chain))
         return
     else:
+        print "Picking sample", sample, "from chain of shape", chain.shape
         f = chain[sample] - chain[sample].mean()
-
-    # Reshape sensors and readings to an automatically detected grid shape
-    gridshape = autoshape(sensors)
-    xgrid = x.reshape(*gridshape)
-    ygrid = y.reshape(*gridshape)
-    dgrid = d.reshape(*gridshape)
-    fgrid = f.reshape(*gridshape)
 
     # Contour map of residuals in f
     plt.subplot(2, 1, 1)
-    plt.contourf(xgrid, ygrid, dgrid, alpha=0.5)
+    # plt.contourf(xgrid, ygrid, dgrid, alpha=0.5)
+    plt.tricontourf(x, y, d, alpha=0.5)
     plt.colorbar()
-    plt.contour(xgrid, ygrid, fgrid, colors='k')
+    # plt.contour(xgrid, ygrid, fgrid, colors='k')
+    plt.tricontour(x, y, f, colors='k')
     plt.xlabel("Eastings (m)")
     plt.ylabel("Northings (m)")
 
@@ -199,7 +198,7 @@ def main_contours():
     magReadings = np.loadtxt("magReadings.csv", delimiter=',')
     gravSensors = np.loadtxt("gravSensors.csv", delimiter=',')
     gravReadings = np.loadtxt("gravReadings.csv", delimiter=',')
-    samples = np.load("output.npz")
+    samples = np.load(runtag + ".npz")
 
     # Make a few plots of sensors
     plot_sensor(magSensors, magReadings, samples['magReadings'], units='nT')
@@ -211,13 +210,13 @@ def main_fieldobs():
     """
 
     # First show the data we expect
-    fieldSensors = pd.read_csv('fieldSensors.csv', names=['x','y'], comment='#')
-    fieldReadings = pd.read_csv('fieldReadings.csv', names=['val'], comment='#')
+    fieldSensors = pd.read_csv('fieldobsSensors.csv', names=['x','y'], comment='#')
+    fieldReadings = pd.read_csv('fieldobsReadings.csv', names=['val'], comment='#')
     fieldLabels = fieldSensors.assign(val=fieldobs_lookup(fieldReadings.val))
     display_ground_truth(fieldLabels)
 
     # Now show samples
-    samples = np.load("output.npz")
+    samples = np.load(runtag + ".npz")
     for i in np.arange(0, 2500, 25):
         fig = plt.figure(figsize=(6,6))
         readings = samples['fieldReadings'][i]
@@ -235,7 +234,7 @@ def main_boundarymovie():
     magReadings = np.loadtxt("magReadings.csv", delimiter=',')
     gravSensors = np.loadtxt("gravSensors.csv", delimiter=',')
     gravReadings = np.loadtxt("gravReadings.csv", delimiter=',')
-    samples = np.load("output.npz")
+    samples = np.load(runtag + ".npz")
 
     # Try fitting a few GP layers
     layer_labels = ['layer{}ctrlPoints'.format(i) for i in range(4)]
@@ -248,4 +247,4 @@ def main_boundarymovie():
 
 
 if __name__ == "__main__":
-    main_fieldobs()
+    main_contours()
