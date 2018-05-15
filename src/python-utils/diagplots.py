@@ -17,7 +17,8 @@ import GPy
 runtag = 'gascoyne_v3'
 
 
-def plot_sensor(sensors, readings, chain, sample=None, units='unknown units'):
+def plot_sensor(sensors, readings, chain, sample=None,
+                units='unknown units', show=True):
     """
     Plots the value of a sensor against the forward model:
         Contour plots of real data and forward models
@@ -33,6 +34,8 @@ def plot_sensor(sensors, readings, chain, sample=None, units='unknown units'):
     :param sample:  int index of sample to grab from chain
         (defaults to None, which averages over the chain)
     :param units:  str describing the units of sensor readings
+    :param show:  call plt.show()?  default True; set to False if you're
+        making a multi-panel plot or want to save fig in calling routine
     """
     x, y, z = sensors.T
     d = readings - readings.mean()
@@ -52,23 +55,28 @@ def plot_sensor(sensors, readings, chain, sample=None, units='unknown units'):
         f = chain[sample] - chain[sample].mean()
 
     # Contour map of residuals in f
-    plt.subplot(2, 1, 1)
-    # plt.contourf(xgrid, ygrid, dgrid, alpha=0.5)
-    plt.tricontourf(x, y, d, alpha=0.5)
+    fig = plt.figure(figsize=(6,7))
+    ax1 = plt.subplot2grid((3,1), (0,0), rowspan=2)
+    plt.tricontourf(x, y, d, alpha=0.5, label='Data')
     plt.colorbar()
-    # plt.contour(xgrid, ygrid, fgrid, colors='k')
-    plt.tricontour(x, y, f, colors='k')
+    plt.tricontour(x, y, f, colors='k', label='Fwd Model')
     plt.xlabel("Eastings (m)")
     plt.ylabel("Northings (m)")
+    plt.legend(loc='upper right')
 
     # Histogram of residuals in f
-    plt.subplot(2, 1, 2)
+    ax2 = plt.subplot2grid((3,1), (2,0), rowspan=1)
     plt.hist(d-f, bins=20)
     plt.xlabel("Data $-$ Model ({})".format(units))
-    # Show
-    plt.show()
 
-def display_ground_truth(labels, spherical=True):
+    # Show
+    plt.subplots_adjust(left=0.12, bottom=0.08,
+                        right=0.90, top=0.92,
+                        wspace=0.20, hspace=0.40)
+    if show:
+        plt.show()
+
+def display_ground_truth(labels, spherical=True, show=True):
     """
     Displays geological ground-truth labels in a given area.  Put here
     until I find a better home for it.
@@ -77,6 +85,8 @@ def display_ground_truth(labels, spherical=True):
     :param L:  length of side of (square) modeled area in metres
     :param labels:  pd.DataFrame with columns ['lat', 'lng', 'val']
     :param spherical:  bool, True if (x, y) = (lat, lng) in degrees
+    :param show:  call plt.show()?  default True; set to False if you're
+        making a multi-panel plot or want to save fig in calling routine
     """
     # Plot the ground truth
     x, y, v = labels.x, labels.y, labels.val
@@ -89,7 +99,8 @@ def display_ground_truth(labels, spherical=True):
     #           .format(L/1e+3, L/1e+3, lng, lat))
     plt.xlabel('Eastings (m)')
     plt.ylabel('Northings (m)')
-    # plt.show()
+    if show:
+        plt.show()
 
 def fieldobs_lookup(readings):
 
@@ -113,10 +124,15 @@ def main_contours():
     gravSensors = np.loadtxt("gravSensors.csv", delimiter=',')
     gravReadings = np.loadtxt("gravReadings.csv", delimiter=',')
     samples = np.load(runtag + ".npz")
+    N = len(samples['magReadings'])
 
     # Make a few plots of sensors
-    plot_sensor(magSensors, magReadings, samples['magReadings'], units='nT')
-    plot_sensor(gravSensors, gravReadings, samples['gravReadings'], units='mgal')
+    plot_sensor(magSensors, magReadings, samples['magReadings'][N/2:],
+                units='nT', show=False)
+    plt.savefig('mag_contours.png')
+    plot_sensor(gravSensors, gravReadings, samples['gravReadings'][N/2:],
+                units='mgal', show=False)
+    plt.savefig('grav_contours.png')
 
 def main_fieldobs():
     """
@@ -127,17 +143,22 @@ def main_fieldobs():
     fieldSensors = pd.read_csv('fieldobsSensors.csv', names=['x','y'], comment='#')
     fieldReadings = pd.read_csv('fieldobsReadings.csv', names=['val'], comment='#')
     fieldLabels = fieldSensors.assign(val=fieldobs_lookup(fieldReadings.val))
-    display_ground_truth(fieldLabels)
+    fig = plt.figure(figsize=(6,6))
+    display_ground_truth(fieldLabels, show=False)
+    plt.title('Field Observations'.format(runtag))
+    plt.savefig('boundary_data.png')
 
     # Now show samples
     samples = np.load(runtag + ".npz")
-    for i in np.arange(0, 2500, 25):
-        fig = plt.figure(figsize=(6,6))
-        readings = samples['fieldReadings'][i]
-        fieldLabels.val = fieldobs_lookup(readings)
-        display_ground_truth(fieldLabels)
-        plt.savefig('boundary_movie_frame{:04d}.png'.format(i))
-        plt.close()
+    fig = plt.figure(figsize=(6,6))
+    i = len(samples['fieldReadings'])
+    readings = samples['fieldReadings'][i-1]
+    fieldLabels.val = fieldobs_lookup(readings)
+    display_ground_truth(fieldLabels, show=False)
+    plt.title('Forward-Modeled Field Observations, '
+              'Sample {} from MCMC Chain'.format(i))
+    plt.savefig('boundary_fwdmodel_endchain.png')
+    plt.close()
 
 def main_boundarymovie():
     """
@@ -162,3 +183,4 @@ def main_boundarymovie():
 
 if __name__ == "__main__":
     main_contours()
+    main_fieldobs()
