@@ -186,7 +186,7 @@ def write_config(lng, lat, L, maxdepth, layers, H_IGRF,
     ctrlmin_fnames = form_csv_fnames(layers,"CtrlMin")
     ctrlmax_fnames = form_csv_fnames(layers,"CtrlMax")
     gpsig = 0.15*(layers.zmax - layers.zmin)
-    gpcov = np.zeros(len(gpsig))
+    gpcov = 0.15*(layers.zmax - layers.zmin)
     config_output += (
         "####################\n"
         "# World Boundaries #\n"

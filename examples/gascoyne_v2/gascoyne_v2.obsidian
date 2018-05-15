@@ -38,7 +38,7 @@ depthRange = 0.0 10000.0
 
 # Boundary offset CSV files. 1 file per boundary and space separated
 # (RS: these files contain bird's-eye maps of the GP mean function.)
-offsets = DurlacherSupersuiteOffset.csv MoorarieSupersuiteOffset.csv MoogieMetamorphicsOffset.csv HalfwayGneissOffset.csv
+offsets = MoogieMetamorphicsOffset.csv HalfwayGneissOffset.csv DurlacherSupersuiteOffset.csv
 
 # Boundary time CSV files. If useTimes is enabled, for layer 2 onwards, these
 # files are interpreted as two way times rather than depths. First boundary is
@@ -48,23 +48,23 @@ times =
 
 # Control point masks. These files determine the number of control points,
 # their shape, and which control points vary and are fixed.
-ctrlPointMasks = DurlacherSupersuiteCtrlMask.csv MoorarieSupersuiteCtrlMask.csv MoogieMetamorphicsCtrlMask.csv HalfwayGneissCtrlMask.csv
+ctrlPointMasks = MoogieMetamorphicsCtrlMask.csv HalfwayGneissCtrlMask.csv DurlacherSupersuiteCtrlMask.csv
 
 # Control point minimum. For each boundary, the minimun value a control point
 # can take from the offset surface
 # (RS: these provide hard reflection boundaries for the Metropolis proposal.)
-ctrlPointMins = DurlacherSupersuiteCtrlMin.csv MoorarieSupersuiteCtrlMin.csv MoogieMetamorphicsCtrlMin.csv HalfwayGneissCtrlMin.csv
+ctrlPointMins = MoogieMetamorphicsCtrlMin.csv HalfwayGneissCtrlMin.csv DurlacherSupersuiteCtrlMin.csv
 
 # Control point maximum. For each boundary, the maximum value a control point
 # can take from the offset surface.
 # (RS: these provide hard reflection boundaries for the Metropolis proposal.)
-ctrlPointMaxs = DurlacherSupersuiteCtrlMax.csv MoorarieSupersuiteCtrlMax.csv MoogieMetamorphicsCtrlMax.csv HalfwayGneissCtrlMax.csv
+ctrlPointMaxs = MoogieMetamorphicsCtrlMax.csv HalfwayGneissCtrlMax.csv DurlacherSupersuiteCtrlMax.csv
 
 # Standard deviations for for how the individual control points should vary.
 # These numbers (one per boundary) are the square roots of the diagonal of the
 # covariance matrix of a joint Gaussian over each layer's control points
 # (RS: amplitude of variation of the GP boundary for each layer.)
-uncoupledSDs = 1500.0 2250.0 3750.0 3750.0
+uncoupledSDs = 0.5 5000.0 5000.0
 
 # Standard deviations for for how the individual control points should co-vary.
 # These numbers (one per boundary) are the square roots of the off diagonal
@@ -74,12 +74,12 @@ uncoupledSDs = 1500.0 2250.0 3750.0 3750.0
 #  causes them to vary together.  it's turned off here but think of these as
 #  systematic uncertainties on a constant offset to the GP mean function in
 #  each layer; see distrib::coupledGaussianBlock to see how it's implemented.)
-coupledSDs = 0.0 0.0 0.0 0.0
+coupledSDs = 0.3 3000.0 3000.0
 
 # boundary "type", either normal or warped. warped boundaries are intended to
 # be used as intrusion layers -- they are clipped differently and exaggerated
 # in the z direction to produce structures consistent with granite intrusions
-types = normal normal normal normal
+types = normal normal normal
 
 # Flag to determine whether the offset files (exepct the top boundary) should
 # be interpreted as two-way times rather than distances. This allows the use of
@@ -99,24 +99,24 @@ useTimes = false
 # Rock property means. The rock propetries for each layer are a multivariate
 # (truncated) gaussian, and this is the mean vector for that gaussian.
 # One file per layer
-means = DurlacherSupersuiteRockMeans.csv MoorarieSupersuiteRockMeans.csv MoogieMetamorphicsRockMeans.csv HalfwayGneissRockMeans.csv
+means = MoogieMetamorphicsRockMeans.csv HalfwayGneissRockMeans.csv DurlacherSupersuiteRockMeans.csv
 
 # Rock property minimum values. The PDF for rock properties is truncated beyond
 # this maximum value. The MCMC will also never explore outside this boundary.
-mins = DurlacherSupersuiteRockMins.csv MoorarieSupersuiteRockMins.csv MoogieMetamorphicsRockMins.csv HalfwayGneissRockMins.csv
+mins = MoogieMetamorphicsRockMins.csv HalfwayGneissRockMins.csv DurlacherSupersuiteRockMins.csv
 
 # Rock property maximum values. The PDF for rock properties is truncated beyond
 # this maximum value. The MCMC will also never explore outside this boundary.
-maxs = DurlacherSupersuiteRockMaxs.csv MoorarieSupersuiteRockMaxs.csv MoogieMetamorphicsRockMaxs.csv HalfwayGneissRockMaxs.csv
+maxs = MoogieMetamorphicsRockMaxs.csv HalfwayGneissRockMaxs.csv DurlacherSupersuiteRockMaxs.csv
 
 # Rock property covariances. Each layer has rock properties which are jointly
 # Gaussian, and this propetry gives the covariance matrix for each.
-covariances = DurlacherSupersuiteRockCov.csv MoorarieSupersuiteRockCov.csv MoogieMetamorphicsRockCov.csv HalfwayGneissRockCov.csv
+covariances = MoogieMetamorphicsRockCov.csv HalfwayGneissRockCov.csv DurlacherSupersuiteRockCov.csv
 
 # Rock property masks. Allows the user to turn on or off varying of rock
 # properties on a per-layer basis. If a rock property is masked out, it will be
 # fixed at it's mean value and will be ignored by the MCMC
-masks = DurlacherSupersuiteRockMask.csv MoorarieSupersuiteRockMask.csv MoogieMetamorphicsRockMask.csv HalfwayGneissRockMask.csv
+masks = MoogieMetamorphicsRockMask.csv HalfwayGneissRockMask.csv DurlacherSupersuiteRockMask.csv
 
 
 ##############
@@ -150,7 +150,7 @@ layerProperties =
 
 # Enable gravity as a sensor, if disabled, all the other gravity inputs are
 # ignored.
-enabled = true
+enabled = false
 
 # Locations for the gravity sensors as a csv file
 sensorLocations= gravSensors.csv
@@ -183,18 +183,18 @@ noiseBeta = 0.5
 
 # Enable magnetics as a sensor, if disabled, all the other magnetic inputs are
 # ignored.
-enabled = true
+enabled = false
 
 # Locations of the magnetics sensors as a csv file.
-sensorLocations = magSensors.csv
+sensorLocations = magSensors_subsamp.csv
 
 # Readings of the total magnetic anomaly for each of the sensors define in
 # sensorLocations.
-sensorReadings = magReadings.csv
+sensorReadings = magReadings_subsamp.csv
 
 # The resolution of the forward model voxelisation of the world
 # x y z
-gridResolution = 20 20 40
+gridResolution = 40 40 40
 
 # voxelisation supersample; horizontal antialiasing; depricated; do not use
 supersample = 0
@@ -391,7 +391,7 @@ wallTime = 86400
 # The number of states added to the highest temperature chain before it
 # initiates a swap with the next coldest chain. This will propagate all the way
 # down to the lowest temperature chain.
-swapInterval = 50
+swapInterval = 10
 
 # the factor that defines the geometric progression of chain temperatures for
 # each stack. t_n+1 = t_n * initialTempFactor, with t_1 = 1
@@ -433,6 +433,11 @@ cacheLength = 1000
 # that width
 [proposal]
 
+# Proposal distribution (either Normal or CrankNicholson)
+distribution = CrankNicholson
+
+# Static step size parameter rho for Crank-Nicholson proposal
+ro = 0.5
 
 # The initial value of sigma (the proposal width) for the lowest temperature
 # chain

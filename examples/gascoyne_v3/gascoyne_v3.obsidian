@@ -18,15 +18,15 @@
 
 # The x components of the world boundary in metres
 # min, max 
-xRange = 0.0 20000.0
+xRange = 0.0 15000.0
 
 # The y components of the world boundary in metres
 # min, max
-yRange = 0.0 20000.0
+yRange = 0.0 15000.0
 
 # The z components of the world boundary in metres
 # min, max
-depthRange = 0.0 10000.0
+depthRange = 0.0 20000.0
 
 
 ####################
@@ -38,7 +38,7 @@ depthRange = 0.0 10000.0
 
 # Boundary offset CSV files. 1 file per boundary and space separated
 # (RS: these files contain bird's-eye maps of the GP mean function.)
-offsets = DurlacherSupersuiteOffset.csv MoorarieSupersuiteOffset.csv MoogieMetamorphicsOffset.csv HalfwayGneissOffset.csv
+offsets = MoogieMetamorphicsOffset.csv HalfwayGneissOffset.csv DurlacherSupersuiteOffset.csv HalfwayGneissOffset.csv
 
 # Boundary time CSV files. If useTimes is enabled, for layer 2 onwards, these
 # files are interpreted as two way times rather than depths. First boundary is
@@ -48,23 +48,23 @@ times =
 
 # Control point masks. These files determine the number of control points,
 # their shape, and which control points vary and are fixed.
-ctrlPointMasks = DurlacherSupersuiteCtrlMask.csv MoorarieSupersuiteCtrlMask.csv MoogieMetamorphicsCtrlMask.csv HalfwayGneissCtrlMask.csv
+ctrlPointMasks = MoogieMetamorphicsCtrlMask.csv HalfwayGneissCtrlMask.csv DurlacherSupersuiteCtrlMask.csv HalfwayGneissCtrlMask.csv
 
 # Control point minimum. For each boundary, the minimun value a control point
 # can take from the offset surface
 # (RS: these provide hard reflection boundaries for the Metropolis proposal.)
-ctrlPointMins = DurlacherSupersuiteCtrlMin.csv MoorarieSupersuiteCtrlMin.csv MoogieMetamorphicsCtrlMin.csv HalfwayGneissCtrlMin.csv
+ctrlPointMins = MoogieMetamorphicsCtrlMin.csv HalfwayGneissCtrlMin.csv DurlacherSupersuiteCtrlMin.csv HalfwayGneissCtrlMin.csv
 
 # Control point maximum. For each boundary, the maximum value a control point
 # can take from the offset surface.
 # (RS: these provide hard reflection boundaries for the Metropolis proposal.)
-ctrlPointMaxs = DurlacherSupersuiteCtrlMax.csv MoorarieSupersuiteCtrlMax.csv MoogieMetamorphicsCtrlMax.csv HalfwayGneissCtrlMax.csv
+ctrlPointMaxs = MoogieMetamorphicsCtrlMax.csv HalfwayGneissCtrlMax.csv DurlacherSupersuiteCtrlMax.csv HalfwayGneissCtrlMax.csv
 
 # Standard deviations for for how the individual control points should vary.
 # These numbers (one per boundary) are the square roots of the diagonal of the
 # covariance matrix of a joint Gaussian over each layer's control points
 # (RS: amplitude of variation of the GP boundary for each layer.)
-uncoupledSDs = 1500.0 2250.0 3750.0 3750.0
+uncoupledSDs = 0.5 5000.0 5000.0 5000.0
 
 # Standard deviations for for how the individual control points should co-vary.
 # These numbers (one per boundary) are the square roots of the off diagonal
@@ -74,7 +74,7 @@ uncoupledSDs = 1500.0 2250.0 3750.0 3750.0
 #  causes them to vary together.  it's turned off here but think of these as
 #  systematic uncertainties on a constant offset to the GP mean function in
 #  each layer; see distrib::coupledGaussianBlock to see how it's implemented.)
-coupledSDs = 0.0 0.0 0.0 0.0
+coupledSDs = 0.5 5000.0 5000.0 5000.0
 
 # boundary "type", either normal or warped. warped boundaries are intended to
 # be used as intrusion layers -- they are clipped differently and exaggerated
@@ -99,24 +99,24 @@ useTimes = false
 # Rock property means. The rock propetries for each layer are a multivariate
 # (truncated) gaussian, and this is the mean vector for that gaussian.
 # One file per layer
-means = DurlacherSupersuiteRockMeans.csv MoorarieSupersuiteRockMeans.csv MoogieMetamorphicsRockMeans.csv HalfwayGneissRockMeans.csv
+means = MoogieMetamorphicsRockMeans.csv HalfwayGneissRockMeans.csv DurlacherSupersuiteRockMeans.csv HalfwayGneissRockMeans.csv
 
 # Rock property minimum values. The PDF for rock properties is truncated beyond
 # this maximum value. The MCMC will also never explore outside this boundary.
-mins = DurlacherSupersuiteRockMins.csv MoorarieSupersuiteRockMins.csv MoogieMetamorphicsRockMins.csv HalfwayGneissRockMins.csv
+mins = MoogieMetamorphicsRockMins.csv HalfwayGneissRockMins.csv DurlacherSupersuiteRockMins.csv HalfwayGneissRockMins.csv
 
 # Rock property maximum values. The PDF for rock properties is truncated beyond
 # this maximum value. The MCMC will also never explore outside this boundary.
-maxs = DurlacherSupersuiteRockMaxs.csv MoorarieSupersuiteRockMaxs.csv MoogieMetamorphicsRockMaxs.csv HalfwayGneissRockMaxs.csv
+maxs = MoogieMetamorphicsRockMaxs.csv HalfwayGneissRockMaxs.csv DurlacherSupersuiteRockMaxs.csv HalfwayGneissRockMaxs.csv
 
 # Rock property covariances. Each layer has rock properties which are jointly
 # Gaussian, and this propetry gives the covariance matrix for each.
-covariances = DurlacherSupersuiteRockCov.csv MoorarieSupersuiteRockCov.csv MoogieMetamorphicsRockCov.csv HalfwayGneissRockCov.csv
+covariances = MoogieMetamorphicsRockCov.csv HalfwayGneissRockCov.csv DurlacherSupersuiteRockCov.csv HalfwayGneissRockCov.csv
 
 # Rock property masks. Allows the user to turn on or off varying of rock
 # properties on a per-layer basis. If a rock property is masked out, it will be
 # fixed at it's mean value and will be ignored by the MCMC
-masks = DurlacherSupersuiteRockMask.csv MoorarieSupersuiteRockMask.csv MoogieMetamorphicsRockMask.csv HalfwayGneissRockMask.csv
+masks = MoogieMetamorphicsRockMask.csv HalfwayGneissRockMask.csv DurlacherSupersuiteRockMask.csv HalfwayGneissRockMask.csv
 
 
 ##############
@@ -160,18 +160,18 @@ sensorReadings = gravReadings.csv
 
 # The resolution of the forward model voxelisation of the world
 # x y z
-gridResolution = 20 20 60
+gridResolution = 30 30 40
 
 # voxelisation supersample; horizontal antialiasing; depricated; do not use
 supersample = 0
 
 # noise inverse gamma: The parameters of the inverse gamma distribution used to
 # compute the likelihood function for gravity. Alpha parameter
-noiseAlpha = 5
+noiseAlpha = 1
 
 # noise inverse gamma: The parameters of the inverse gamma distribution used to
 # compute the likelihood function for gravity. Beta parameter.
-noiseBeta = 0.5
+noiseBeta = 1
 
 
 #############
@@ -194,14 +194,14 @@ sensorReadings = magReadings.csv
 
 # The resolution of the forward model voxelisation of the world
 # x y z
-gridResolution = 20 20 40
+gridResolution = 30 30 40
 
 # voxelisation supersample; horizontal antialiasing; depricated; do not use
 supersample = 0
 
 # noise inverse gamma: The parameters of the inverse gamma distribution used to
 # compute the likelihood function for gravity. Alpha parameter
-noiseAlpha = 1.25
+noiseAlpha = 1
 
 # noise inverse gamma: The parameters of the inverse gamma distribution used to
 # compute the likelihood function for gravity. Beta parameter
@@ -377,7 +377,7 @@ noiseProb = 0.01
 #The number of chains in a sequence of temperatures. The first chain has
 #temperature=1, and then all subsequent chains have a temperature equal to
 #initialTempFactor times the previous temperature.
-chains = 16
+chains = 12
 
 # The number of totally disconnected sets of chains. Total chains is the
 # product of the chains variable and the stacks variable. Different stacks are
@@ -391,7 +391,7 @@ wallTime = 86400
 # The number of states added to the highest temperature chain before it
 # initiates a swap with the next coldest chain. This will propagate all the way
 # down to the lowest temperature chain.
-swapInterval = 50
+swapInterval = 25
 
 # the factor that defines the geometric progression of chain temperatures for
 # each stack. t_n+1 = t_n * initialTempFactor, with t_1 = 1
@@ -419,7 +419,7 @@ betaAdaptInterval = 500
 # The time scale over which the adaption length diminishes. After 10 times this
 # value, the adaption rate in approximately half. Also is equal to the number
 # of states used to calculate the adapt and swap rates in a sliding window.
-adaptionLength = 100000
+adaptionLength = 20000
 
 # Then number of states computed before they are written to disk. Worst case
 # would be to lose this many states upon a hard crash of the obsidian server.
@@ -433,6 +433,11 @@ cacheLength = 1000
 # that width
 [proposal]
 
+# Proposal distribution (either Normal or CrankNicolson)
+distribution = CrankNicolson
+
+# Static step size parameter rho for Crank-Nicolson proposal
+ro = 0.5
 
 # The initial value of sigma (the proposal width) for the lowest temperature
 # chain
