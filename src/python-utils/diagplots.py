@@ -11,6 +11,7 @@ Plots we want to see:
 
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 import GPy
 
 
@@ -154,6 +155,39 @@ def gp_predict(sensors, layer_pars, bounds):
         plt.plot(x[idx], y[idx], label='layer {}'.format(l), ls='None', marker='o')
     plt.legend()
 
+def display_ground_truth(labels, spherical=True):
+    """
+    Displays geological ground-truth labels in a given area.  Put here
+    until I find a better home for it.
+    :param x:  x-coordinate of centre of extracted area
+    :param y:  y-coordinate of centre of extracted area
+    :param L:  length of side of (square) modeled area in metres
+    :param labels:  pd.DataFrame with columns ['lat', 'lng', 'val']
+    :param spherical:  bool, True if (x, y) = (lat, lng) in degrees
+    """
+    # Plot the ground truth
+    x, y, v = labels.x, labels.y, labels.val
+    for f in np.unique(v.values):
+        idx = (v == f)
+        plt.plot(x[idx], y[idx], ls='None', marker='o', ms=3, label=f)
+    plt.legend(loc='upper left')
+    # plt.title("${:.1f} \\times {:.1f}$ km$^2$ area centered on "
+    #           "lng = ${:.3f}$, lat = ${:.3f}$"
+    #           .format(L/1e+3, L/1e+3, lng, lat))
+    plt.xlabel('Eastings (m)')
+    plt.ylabel('Northings (m)')
+    # plt.show()
+
+def fieldobs_lookup(readings):
+
+    from gascoyne_config import config_layers
+    readstr = [ ]
+    for i, v in enumerate(readings):
+        if v in config_layers.index:
+            readstr.append(config_layers.loc[v,'name'])
+        else:
+            readstr.append('Unknown layer')
+    return readstr
 
 def main_contours():
     """
@@ -170,6 +204,27 @@ def main_contours():
     # Make a few plots of sensors
     plot_sensor(magSensors, magReadings, samples['magReadings'], units='nT')
     plot_sensor(gravSensors, gravReadings, samples['gravReadings'], units='mgal')
+
+def main_fieldobs():
+    """
+    The main routine to show simulated field observations
+    """
+
+    # First show the data we expect
+    fieldSensors = pd.read_csv('fieldSensors.csv', names=['x','y'], comment='#')
+    fieldReadings = pd.read_csv('fieldReadings.csv', names=['val'], comment='#')
+    fieldLabels = fieldSensors.assign(val=fieldobs_lookup(fieldReadings.val))
+    display_ground_truth(fieldLabels)
+
+    # Now show samples
+    samples = np.load("output.npz")
+    for i in np.arange(0, 2500, 25):
+        fig = plt.figure(figsize=(6,6))
+        readings = samples['fieldReadings'][i]
+        fieldLabels.val = fieldobs_lookup(readings)
+        display_ground_truth(fieldLabels)
+        plt.savefig('boundary_movie_frame{:04d}.png'.format(i))
+        plt.close()
 
 def main_boundarymovie():
     """
@@ -193,4 +248,4 @@ def main_boundarymovie():
 
 
 if __name__ == "__main__":
-    main_contours()
+    main_fieldobs()
