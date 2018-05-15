@@ -64,7 +64,7 @@ ctrlPointMaxs = MoogieMetamorphicsCtrlMax.csv HalfwayGneissCtrlMax.csv Durlacher
 # These numbers (one per boundary) are the square roots of the diagonal of the
 # covariance matrix of a joint Gaussian over each layer's control points
 # (RS: amplitude of variation of the GP boundary for each layer.)
-uncoupledSDs = 0.3 3000.0 3000.0
+uncoupledSDs = 0.5 5000.0 5000.0
 
 # Standard deviations for for how the individual control points should co-vary.
 # These numbers (one per boundary) are the square roots of the off diagonal
@@ -74,12 +74,12 @@ uncoupledSDs = 0.3 3000.0 3000.0
 #  causes them to vary together.  it's turned off here but think of these as
 #  systematic uncertainties on a constant offset to the GP mean function in
 #  each layer; see distrib::coupledGaussianBlock to see how it's implemented.)
-coupledSDs = 0.0 0.0 0.0
+coupledSDs = 0.3 3000.0 3000.0
 
 # boundary "type", either normal or warped. warped boundaries are intended to
 # be used as intrusion layers -- they are clipped differently and exaggerated
 # in the z direction to produce structures consistent with granite intrusions
-types = normal warped warped
+types = normal normal normal
 
 # Flag to determine whether the offset files (exepct the top boundary) should
 # be interpreted as two-way times rather than distances. This allows the use of
@@ -195,6 +195,7 @@ sensorReadings = magReadings.csv
 # The resolution of the forward model voxelisation of the world
 # x y z
 gridResolution = 20 20 40
+>>>>>>> 1da46021c4b2bce477f52fa5138649e452db9ee8
 
 # voxelisation supersample; horizontal antialiasing; depricated; do not use
 supersample = 0
@@ -355,7 +356,7 @@ noiseBeta = 0.2
 
 # Enable field observations as a sensor. If disabled, all other field
 # observation inputs will be ignored.
-enabled = false
+enabled = true
 
 # CSV file containing a list of field observation sensor locations.
 sensorLocations = fieldobsSensors.csv
@@ -377,7 +378,7 @@ noiseProb = 0.01
 #The number of chains in a sequence of temperatures. The first chain has
 #temperature=1, and then all subsequent chains have a temperature equal to
 #initialTempFactor times the previous temperature.
-chains = 20
+chains = 16
 
 # The number of totally disconnected sets of chains. Total chains is the
 # product of the chains variable and the stacks variable. Different stacks are
@@ -419,7 +420,7 @@ betaAdaptInterval = 500
 # The time scale over which the adaption length diminishes. After 10 times this
 # value, the adaption rate in approximately half. Also is equal to the number
 # of states used to calculate the adapt and swap rates in a sliding window.
-adaptionLength = 20000
+adaptionLength = 100000
 
 # Then number of states computed before they are written to disk. Worst case
 # would be to lose this many states upon a hard crash of the obsidian server.
@@ -433,6 +434,11 @@ cacheLength = 1000
 # that width
 [proposal]
 
+# Proposal distribution (either Normal or CrankNicholson)
+distribution = CrankNicholson
+
+# Static step size parameter rho for Crank-Nicholson proposal
+ro = 0.5
 
 # The initial value of sigma (the proposal width) for the lowest temperature
 # chain
@@ -440,7 +446,7 @@ initialSigma = 0.1
 
 # the factor that defines the geometric progression of chain sigmas for
 # each stack. s_n+1 = s_n * initialSigmaFactor, with s_1 = initialSigma
-initialSigmaFactor = 1.1
+initialSigmaFactor = 1.4
 
 # The maximum multiplicative factor by which sigma can adapt
 maxFactor = 1.25

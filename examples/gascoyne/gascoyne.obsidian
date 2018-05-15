@@ -355,7 +355,7 @@ noiseBeta = 0.2
 
 # Enable field observations as a sensor. If disabled, all other field
 # observation inputs will be ignored.
-enabled = false
+enabled = true
 
 # CSV file containing a list of field observation sensor locations.
 sensorLocations = fieldobsSensors.csv
@@ -395,7 +395,7 @@ swapInterval = 50
 
 # the factor that defines the geometric progression of chain temperatures for
 # each stack. t_n+1 = t_n * initialTempFactor, with t_1 = 1
-initialTempFactor = 1.1
+initialTempFactor = 2.0
 
 # The swap rate that the chains are trying to reach. Note that 0.24 is optimal
 # for an infinite dimensional problem, 0.5 is optimal for a 1 dimensional
@@ -440,7 +440,7 @@ initialSigma = 0.1
 
 # the factor that defines the geometric progression of chain sigmas for
 # each stack. s_n+1 = s_n * initialSigmaFactor, with s_1 = initialSigma
-initialSigmaFactor = 1.1
+initialSigmaFactor = 1.4
 
 # The maximum multiplicative factor by which sigma can adapt
 maxFactor = 1.25

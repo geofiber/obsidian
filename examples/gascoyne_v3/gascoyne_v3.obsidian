@@ -355,7 +355,7 @@ noiseBeta = 0.2
 
 # Enable field observations as a sensor. If disabled, all other field
 # observation inputs will be ignored.
-enabled = false
+enabled = true
 
 # CSV file containing a list of field observation sensor locations.
 sensorLocations = fieldobsSensors.csv
@@ -377,7 +377,7 @@ noiseProb = 0.01
 #The number of chains in a sequence of temperatures. The first chain has
 #temperature=1, and then all subsequent chains have a temperature equal to
 #initialTempFactor times the previous temperature.
-chains = 20
+chains = 12
 
 # The number of totally disconnected sets of chains. Total chains is the
 # product of the chains variable and the stacks variable. Different stacks are
