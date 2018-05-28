@@ -185,8 +185,8 @@ def write_config(lng, lat, L, maxdepth, layers, H_IGRF,
     ctrlmask_fnames = form_csv_fnames(layers,"CtrlMask")
     ctrlmin_fnames = form_csv_fnames(layers,"CtrlMin")
     ctrlmax_fnames = form_csv_fnames(layers,"CtrlMax")
-    gpsig = 0.15*(layers.zmax - layers.zmin)
-    gpcov = 0.15*(layers.zmax - layers.zmin)
+    gpsig = 0.25*(layers.zmax - layers.zmin)
+    gpcov = 0.25*(layers.zmax - layers.zmin)
     config_output += (
         "####################\n"
         "# World Boundaries #\n"
@@ -349,18 +349,18 @@ def write_config(lng, lat, L, maxdepth, layers, H_IGRF,
         "\n"
         "# The resolution of the forward model voxelisation of the world\n"
         "# x y z\n"
-        "gridResolution = 20 20 60\n"
+        "gridResolution = 30 30 40\n"
         "\n"
         "# voxelisation supersample; horizontal antialiasing; depricated; do not use\n"
         "supersample = 0\n"
         "\n"
         "# noise inverse gamma: The parameters of the inverse gamma distribution used to\n"
         "# compute the likelihood function for gravity. Alpha parameter\n"
-        "noiseAlpha = 5\n"
+        "noiseAlpha = 1\n"
         "\n"
         "# noise inverse gamma: The parameters of the inverse gamma distribution used to\n"
         "# compute the likelihood function for gravity. Beta parameter.\n"
-        "noiseBeta = 0.5\n"
+        "noiseBeta = 1\n"
         "\n"
         "\n")
 
@@ -390,14 +390,14 @@ def write_config(lng, lat, L, maxdepth, layers, H_IGRF,
         "\n"
         "# The resolution of the forward model voxelisation of the world\n"
         "# x y z\n"
-        "gridResolution = 20 20 40\n"
+        "gridResolution = 30 30 40\n"
         "\n"
         "# voxelisation supersample; horizontal antialiasing; depricated; do not use\n"
         "supersample = 0\n"
         "\n"
         "# noise inverse gamma: The parameters of the inverse gamma distribution used to\n"
         "# compute the likelihood function for gravity. Alpha parameter\n"
-        "noiseAlpha = 1.25\n"
+        "noiseAlpha = 1\n"
         "\n"
         "# noise inverse gamma: The parameters of the inverse gamma distribution used to\n"
         "# compute the likelihood function for gravity. Beta parameter\n"
@@ -576,7 +576,7 @@ def write_config(lng, lat, L, maxdepth, layers, H_IGRF,
         "\n"
         "# Enable field observations as a sensor. If disabled, all other field\n"
         "# observation inputs will be ignored.\n"
-        "enabled = false\n"
+        "enabled = true\n"
         "\n"
         "# CSV file containing a list of field observation sensor locations.\n"
         "sensorLocations = fieldobsSensors.csv\n"
@@ -664,6 +664,11 @@ def write_config(lng, lat, L, maxdepth, layers, H_IGRF,
         "# that width\n"
         "[proposal]\n"
         "\n"
+        "# Proposal distribution (either Normal or CrankNicolson)\n"
+        "distribution = CrankNicolson\n"
+        "\n"
+        "# Static step size parameter rho for Crank-Nicolson proposal\n"
+        "ro = 0.5\n"
         "\n"
         "# The initial value of sigma (the proposal width) for the lowest temperature\n"
         "# chain\n"

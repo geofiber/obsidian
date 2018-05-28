@@ -150,7 +150,7 @@ layerProperties =
 
 # Enable gravity as a sensor, if disabled, all the other gravity inputs are
 # ignored.
-enabled = false
+enabled = true
 
 # Locations for the gravity sensors as a csv file
 sensorLocations= gravSensors.csv
@@ -183,18 +183,19 @@ noiseBeta = 0.5
 
 # Enable magnetics as a sensor, if disabled, all the other magnetic inputs are
 # ignored.
-enabled = false
+enabled = true
 
 # Locations of the magnetics sensors as a csv file.
-sensorLocations = magSensors_subsamp.csv
+sensorLocations = magSensors.csv
 
 # Readings of the total magnetic anomaly for each of the sensors define in
 # sensorLocations.
-sensorReadings = magReadings_subsamp.csv
+sensorReadings = magReadings.csv
 
 # The resolution of the forward model voxelisation of the world
 # x y z
-gridResolution = 40 40 40
+gridResolution = 20 20 40
+>>>>>>> 1da46021c4b2bce477f52fa5138649e452db9ee8
 
 # voxelisation supersample; horizontal antialiasing; depricated; do not use
 supersample = 0
@@ -391,7 +392,7 @@ wallTime = 86400
 # The number of states added to the highest temperature chain before it
 # initiates a swap with the next coldest chain. This will propagate all the way
 # down to the lowest temperature chain.
-swapInterval = 10
+swapInterval = 25
 
 # the factor that defines the geometric progression of chain temperatures for
 # each stack. t_n+1 = t_n * initialTempFactor, with t_1 = 1
