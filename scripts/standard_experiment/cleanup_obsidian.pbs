@@ -1,0 +1,2 @@
+#!/bin/bash
+mv $path_obsidian_err $dir_rds

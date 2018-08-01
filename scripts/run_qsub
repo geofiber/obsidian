@@ -1,0 +1,9 @@
+#for num in 01 02 03 04 05 06
+for num in 02 03 04 05 06
+do
+	echo $num
+	cd $num
+	#qsub pickaxe2.pbs
+	qsub mason2.pbs
+	cd ..
+done

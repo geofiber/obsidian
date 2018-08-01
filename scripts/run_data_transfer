@@ -1,0 +1,7 @@
+#!/bin/bash
+experiment_date=07_26_2018
+for experiment_num in 01 02 03 04 05 06
+do
+	echo $experiment_num
+	qsub -v experiment_date=$experiment_date,experiment_num=$experiment_num data_transfer_args.pbs
+done

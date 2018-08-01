@@ -1,0 +1,8 @@
+#!/bin/bash
+#PBS -P RDS-FEI-Bayes_BMC-RW
+#PBS -q defaultQ
+#PBS -l select=1:ncpus=4:mem=16GB,walltime=01:00:00
+ulimit -c unlimited
+module load gcc/4.9.3
+cd /project/RDS-FSC-obsidian-RW/obsidian-dk/experiments/07_20_2018/01
+../../../build2/prospector  --nsamples=1000 -l-4 -f true -o prior.npz
