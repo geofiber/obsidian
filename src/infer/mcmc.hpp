@@ -25,7 +25,6 @@
 #include "infer/chainarray.hpp"
 #include "infer/diagnostics.hpp"
 #include "infer/adaptive.hpp"
-=======
 #include "distrib/multigaussian.hpp"
 #include "comms/transport.hpp"
 

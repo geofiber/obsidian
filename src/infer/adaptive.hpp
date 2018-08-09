@@ -94,7 +94,6 @@ namespace stateline
       return proposal;
     };
     
-<<<<<<< HEAD
     //! RS 2018/03/09:  A multivariate Gaussian proposal function.
     //! It turns out random walk proposals made from a Gaussian with correlated
     //! components won't satisfy detailed balance if made across a reflection
