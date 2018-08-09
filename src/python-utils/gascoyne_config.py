@@ -49,12 +49,13 @@ H_IGRF = np.array([1.419e+2, 2.8739e+4, -4.62667e+4])
 config_layers = pd.DataFrame(
         # layer name, layer type, (min, max) depth in m, (nx, ny) control pts
         [('Moogie Metamorphics',  'normal', -1.0e+0, 1.0e+0, 1, 1),
-         ('Halfway Gneiss',       'warped', -1.0e+4, 1.0e+4, 5, 5),
-         ('Durlacher Supersuite', 'warped', -1.0e+4, 1.0e+4, 5, 5),],
+         ('Halfway Gneiss',       'normal', -1.0e+4, 1.0e+4, 5, 5),
+         ('Durlacher Supersuite', 'normal', -1.0e+4, 1.0e+4, 5, 5),
+         ('Halfway Gneiss',       'normal', -1.0e+4, 1.0e+4, 5, 5),],
         columns=['name','type','zmin','zmax','nx','ny'])
 
-config_params = { 'lng': 116.10, 'lat': -24.85, 'L': 2.0e+4,
-                  'maxdepth': 1.0e+4, 'layers': config_layers,
+config_params = { 'lng': 116.10, 'lat': -24.85, 'L': 1.5e+4,
+                  'maxdepth': 2.0e+4, 'layers': config_layers,
                   'H_IGRF': H_IGRF, }
 
 # ============================================================================
@@ -145,7 +146,7 @@ def display_ground_truth(lng, lat, L):
     Displays geological ground-truth labels in a given area.  Put here
     until I find a better home for it.
     :param lng:  longitude of modeled area centre in decimal degrees E
-    :param lat:  latitude of modeled area centre in decimal degrees E
+    :param lat:  latitude of modeled area centre in decimal degrees N
     :param L:  length of side of (square) modeled area in metres
     """
     # Read in Hugo's data and extract the desired volume
