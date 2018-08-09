@@ -13,6 +13,8 @@
 #include <random>
 #include <functional>
 #include <Eigen/Core>
+#include "prior/world.hpp"
+#include "prior/prior.hpp"
 #include "distrib/multigaussian.hpp"
 
 namespace stateline
@@ -88,9 +90,11 @@ namespace stateline
       for (int i = 0; i < proposal.rows(); i++)
         proposal(i) = state(i) + rand(generator) * sigma;
 
-      return bouncyBounds(proposal, min, max);
+      //return bouncyBounds(proposal, min, max);
+      return proposal;
     };
     
+<<<<<<< HEAD
     //! RS 2018/03/09:  A multivariate Gaussian proposal function.
     //! It turns out random walk proposals made from a Gaussian with correlated
     //! components won't satisfy detailed balance if made across a reflection
@@ -117,6 +121,52 @@ namespace stateline
       distrib::MultiGaussian q(zero_mean, qcov);
       return state + sigma*distrib::drawValues(q, generator);
     };
+
+    //! Crank-Nicolson proposal function.
+    //! 
+    //! \param state The current state of the chain
+    //! \param sigma The standard deviation of the distribution (step size of the proposal)
+    //! \param min The minimum bound of theta 
+    //! \param max The maximum bound of theta 
+    //! \returns The new proposed theta
+    //!
+    Eigen::VectorXd crankNicolsonProposal(const Eigen::VectorXd &state, double sigma, 
+	double ro, obsidian::GlobalPrior& prior
+    )
+    {
+      // Random number generators
+      static std::random_device rd;
+      static std::mt19937 generator(rd());
+      static std::normal_distribution<> rand; // Standard normal
+
+      // RS 2018/04/19:  Transform sigma to the Crank-Nicholson "step size"
+      // parameter rho.  This will allow the chains to adapt the step size.
+      // While technically 0 < rho < 1, mapping -1 < rho < 1 should be good
+      // enough since the sign of rho won't affect the proposal density.
+      double F = exp(sigma);
+      double rho = (F - 1.0/F)/(F + 1.0/F);
+
+      Eigen::VectorXd proposal(state.rows());
+      Eigen::VectorXd epsilon_vec = prior.sample(generator);
+      for (int i = 0; i < proposal.rows(); i++) {
+        double epsilon = epsilon_vec(i);
+        proposal(i) = std::sqrt(1 - rho*rho)*state(i) + rho*epsilon;
+      }
+
+      return proposal;
+    };
     
+    double gaussianProposalPDF(
+	    const Eigen::VectorXd& theta, const double sigma,
+        const Eigen::VectorXd& thetaMins, const Eigen::VectorXd& thetaMaxs
+    )
+    {
+	  double n = theta.size();
+	  Eigen::MatrixXd Sigma = Eigen::MatrixXd::Identity(n, n) * sigma;
+	  obsidian::distrib::MultiGaussian input(theta, Sigma);
+	  double density = obsidian::distrib::logPDF(theta, input, thetaMins, thetaMaxs);
+	  return density;
+    };
+
   }
 }

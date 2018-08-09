@@ -36,24 +36,26 @@ config_petrofn = _datadir + "Petrophysics_Gascoyne.csv"
 ground_truthfn = _datadir + "Formation_data_Gascoyne.csv"
 gravdata_fn = _datadir + "gravity_400m_Gascoyne.txt"
 magdata_fn = _datadir + "mag_TMI_gascoyne.txt"
+fielddata_fn = _datadir + "Formation_data_Gascoyne.csv"
 
 # Column format for sensor files
 sensor_colnames = ['id', 'val', 'lat', 'lng']
 
 # Ambient magnetic field from the IGRF model, which can be queried at
 #     https://www.ngdc.noaa.gov/geomag-web/#igrfwmm
+# Components (in nanoTesla): east, north, down
 H_IGRF = np.array([1.419e+2, 2.8739e+4, -4.62667e+4])
 
 config_layers = pd.DataFrame(
         # layer name, layer type, (min, max) depth in m, (nx, ny) control pts
-        [('Durlacher Supersuite', 'normal', 0.0, 1.0e+4, 5, 5),
-         ('Moorarie Supersuite',  'normal', 0.0, 1.5e+4, 5, 5),
-         ('Moogie Metamorphics',  'normal', 0.0, 2.5e+4, 5, 5),
-         ('Halfway Gneiss',       'normal', 0.0, 2.5e+4, 5, 5),],
+        [('Moogie Metamorphics',  'normal', -1.0e+0, 1.0e+0, 1, 1),
+         ('Halfway Gneiss',       'normal', -1.0e+4, 1.0e+4, 5, 5),
+         ('Durlacher Supersuite', 'normal', -1.0e+4, 1.0e+4, 5, 5),
+         ('Halfway Gneiss',       'normal', -1.0e+4, 1.0e+4, 5, 5),],
         columns=['name','type','zmin','zmax','nx','ny'])
 
-config_params = { 'lng': 116.10, 'lat': -24.85, 'L': 2.0e+4,
-                  'maxdepth': 1.0e+4, 'layers': config_layers,
+config_params = { 'lng': 116.10, 'lat': -24.85, 'L': 1.5e+4,
+                  'maxdepth': 2.0e+4, 'layers': config_layers,
                   'H_IGRF': H_IGRF, }
 
 # ============================================================================
@@ -92,7 +94,7 @@ def compute_rock_priors(rockfname):
                  'log_Resist_x', 'log_Resist_y', 'log_Resist_z',
                  'Resist_Phase', 'PWaveVelocity']
     rockpriormu_def = pd.Series(
-            [ 2.7e+3, 1.5, 2.0, 2e-6, 0.0, 0.0, 0.0, 0.0, 4000 ],
+            [ 2.7e+3, -3.5, 2.0, 2e-6, 0.0, 0.0, 0.0, 0.0, 4000 ],
             index=rockprops)
     rockpriorcov_def = pd.DataFrame(np.diag(
             [ 5.0e+4, 0.5, 0.25, 1e-12, 1.0, 1.0, 1.0, 1.0, 2.5e+5 ]),
@@ -109,21 +111,42 @@ def compute_rock_priors(rockfname):
         if len(df) >= 5:
             # Grab last two columns -- susceptibility and density
             dc = np.zeros(shape=(df.shape[0], 2))
+            # Convert density to g/cm^3
+            dc[:,0] = 1.0*df.loc[:,'Density_g_cm-3']
             # Convert magnetic susceptibility to log scale
-            dc[:,0] = 1000.0*df.loc[:,'Density_g_cm-3']
-            # Convert density to kg/m^3
-            dc[:,1] = np.log10(df.loc[:,'Magnetic_susceptibility'])
+            dc[:,1] = np.log10(df.loc[:,'Magnetic_susceptibility']) - 5.0
             # Store sample covariance in hash
             rockpriormu[f].iloc[:2] = np.mean(dc, axis=0)
             rockpriorcov[f].iloc[:2,:2] = np.cov(dc.T)
     return rockpriormu, rockpriorcov
+
+def convert_ground_truth(fname):
+    """
+    Reads Hugo's formation data file and converts to a standard format.
+    :param fname:  file with formation boundary information
+    """
+    fieldcols = ['id', 'site_id', 'lat', 'lng', 'form_name',
+                 'unit_name', 'geochron', 'sample_id', 'age', 'age_err']
+    fieldtypes = [str, str, float, float, str, str, str, str, float, float]
+    dtype = { fc: ft for fc, ft in zip(fieldcols, fieldtypes) }
+    fielddata = pd.read_csv(fname, names=fieldcols,
+                            dtype=dtype, na_values=['-'], skiprows=1)
+
+    # Calculate a scalar index to represent the layer boundaries, based on
+    # what we've got in our data files so far.  Add as 'val' column to data.
+    fieldval_lookup = { fn: i for i, fn in enumerate(config_layers.name) }
+    fieldval = pd.Series([fieldval_lookup.get(fn, -1) for fn in fielddata.form_name])
+    fielddata = pd.concat([fielddata, fieldval], axis=1)
+    fielddata.rename(columns={0:'val'}, inplace=True)
+
+    return fielddata
 
 def display_ground_truth(lng, lat, L):
     """
     Displays geological ground-truth labels in a given area.  Put here
     until I find a better home for it.
     :param lng:  longitude of modeled area centre in decimal degrees E
-    :param lat:  latitude of modeled area centre in decimal degrees E
+    :param lat:  latitude of modeled area centre in decimal degrees N
     :param L:  length of side of (square) modeled area in metres
     """
     # Read in Hugo's data and extract the desired volume
@@ -161,10 +184,14 @@ def main():
     magdata = pd.read_csv(magdata_fn, names=sensor_colnames,
                           dtype=float, skiprows=1)
 
+    # Read in field observation data and convert to the standard format.
+    fielddata = convert_ground_truth(fielddata_fn)
+
     # Fill remaining fields in config_params
 
     config_params.update({ 'grav_data': gravdata,
                            'mag_data': magdata,
+                           'field_data': fielddata,
                            'rockpriormu': rockpriormu,
                            'rockpriorcov': rockpriorcov, })
 

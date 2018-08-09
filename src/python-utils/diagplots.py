@@ -11,34 +11,19 @@ Plots we want to see:
 
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 import GPy
 
+pickaxe_npz = ('/Users/rscalzo/Desktop/Projects/Professional/Geoscience'
+               '/Formation Boundaries/sandbox/moomba-dk-run06.npz')
+pickaxe_npz = ('/Users/rscalzo/Desktop/Projects/Professional/Geoscience'
+               '/Formation Boundaries/sandbox/gascoyne_v4-thin1000.npz')
+mason_npz   = ('/Users/rscalzo/Desktop/Projects/Professional/Geoscience'
+               '/Formation Boundaries/sandbox/moomba-dk-run01.npz')
 
-def autoshape(sensors):
-    """
-    Senses the shape of a flattened coordinate array by looking for the
-    index at which coordinates start to repeat.  matplotlib contour maps
-    have to have (x, y) in regular grid inputs, which is really annoying
-    because the sensor grids are provided in terms of just (x, y) lists.
-    :param sensors:  np.array of shape (N, 3) with the physical
-        coordinates (x,y,z) of the sensors in meters; assumed to have a
-        regular raster-like structure where N factors into (Nx, Ny)
-    :return:  inferred shape (x, y) of coordinate array
-    """
-    # Take differences between successive oordinates in the list
-    x, y, z = sensors.T
-    mask_x = (np.abs(x[1:] - x[:-1]) > 1e-3)
-    mask_y = (np.abs(y[1:] - y[:-1]) > 1e-3)
-    # Find the minimum index at which a difference is found
-    nx = np.min(np.arange(len(mask_x))[mask_x]) + 1
-    ny = np.min(np.arange(len(mask_y))[mask_y]) + 1
-    # Use whichever of these is nontrivial to reshape the list
-    if nx == 1:
-        return (-1, ny)
-    elif ny == 1:
-        return (nx, -1)
 
-def plot_sensor(sensors, readings, chain, sample=None, units='unknown units'):
+def plot_sensor(sensors, readings, chain, sample=None,
+                units='unknown units', show=True, energy=None):
     """
     Plots the value of a sensor against the forward model:
         Contour plots of real data and forward models
@@ -54,10 +39,17 @@ def plot_sensor(sensors, readings, chain, sample=None, units='unknown units'):
     :param sample:  int index of sample to grab from chain
         (defaults to None, which averages over the chain)
     :param units:  str describing the units of sensor readings
+    :param show:  call plt.show()?  default True; set to False if you're
+        making a multi-panel plot or want to save fig in calling routine
+    :param energy:  optional log posterior estimate(s)
     """
     x, y, z = sensors.T
     d = readings - readings.mean()
+    if energy is not None:    # HACK:  take MAP estimate
+        sample = np.argmin(energy)
+        print "Taking MAP estimate, energy =", energy[sample]
     if sample is None:
+        print "Averaged fwd models over chain of shape", chain.shape
         f = chain.mean(axis=0) - chain.mean()
     elif not isinstance(sample, int):
         print "ERROR:  sample = {} is of type {}, not int".format(
@@ -68,92 +60,76 @@ def plot_sensor(sensors, readings, chain, sample=None, units='unknown units'):
                 sample, -len(chain), len(chain))
         return
     else:
+        print "Picking sample", sample, "from chain of shape", chain.shape
         f = chain[sample] - chain[sample].mean()
 
-    # Reshape sensors and readings to an automatically detected grid shape
-    gridshape = autoshape(sensors)
-    xgrid = x.reshape(*gridshape)
-    ygrid = y.reshape(*gridshape)
-    dgrid = d.reshape(*gridshape)
-    fgrid = f.reshape(*gridshape)
-
     # Contour map of residuals in f
-    plt.subplot(2, 1, 1)
-    plt.contourf(xgrid, ygrid, dgrid, alpha=0.5)
+    fig = plt.figure(figsize=(6,7))
+    ax1 = plt.subplot2grid((3,1), (0,0), rowspan=1)
+    plt.tricontourf(x, y, d, alpha=0.5, label='Data')
     plt.colorbar()
-    plt.contour(xgrid, ygrid, fgrid, colors='k')
+    plt.tricontour(x, y, f, colors='k', label='Fwd Model')
     plt.xlabel("Eastings (m)")
     plt.ylabel("Northings (m)")
+    plt.legend(loc='upper right')
+
+    # Contour map of residuals in f
+    ax1 = plt.subplot2grid((3,1), (1,0), rowspan=1)
+    plt.tricontourf(x, y, d-f, alpha=0.95, label='Data', cmap='coolwarm')
+    plt.colorbar()
+    plt.tricontour(x, y, f, colors='k', label='Fwd Model')
+    plt.xlabel("Eastings (m)")
+    plt.ylabel("Northings (m)")
+    plt.legend(loc='upper right')
 
     # Histogram of residuals in f
-    plt.subplot(2, 1, 2)
+    ax2 = plt.subplot2grid((3,1), (2,0), rowspan=1)
     plt.hist(d-f, bins=20)
     plt.xlabel("Data $-$ Model ({})".format(units))
+
     # Show
-    plt.show()
+    plt.subplots_adjust(left=0.12, bottom=0.08,
+                        right=0.90, top=0.92,
+                        wspace=0.20, hspace=0.40)
+    if show:
+        plt.show()
 
-def gp_predict(sensors, layer_pars, bounds):
+def display_ground_truth(labels, spherical=True, show=True):
     """
-    Bare-bones GP predictor for layer depths at a grid of locations.
-    ...ugh I'm not going to finish that today.  :/
-    :param sensors:  np.array of shape (N, 3) with the physical
-        coordinates (x,y,z) of the sensors in meters
-    :param layer_pars:  np.array of shape (Nl, Nx, Ny) containing the
-        layer heights at the control points
-    :param bounds:  np.array of layer bounds
+    Displays geological ground-truth labels in a given area.  Put here
+    until I find a better home for it.
+    :param x:  x-coordinate of centre of extracted area
+    :param y:  y-coordinate of centre of extracted area
+    :param L:  length of side of (square) modeled area in metres
+    :param labels:  pd.DataFrame with columns ['lat', 'lng', 'val']
+    :param spherical:  bool, True if (x, y) = (lat, lng) in degrees
+    :param show:  call plt.show()?  default True; set to False if you're
+        making a multi-panel plot or want to save fig in calling routine
     """
-    # Boundaries of the region
-    xmin, Lx = bounds[0][0], bounds[0][1] - bounds[0][0]
-    ymin, Ly = bounds[1][0], bounds[1][1] - bounds[1][0]
-    Xpred = sensors[:,:-1]
+    # Plot the ground truth
+    x, y, v = labels.x, labels.y, labels.val
+    for f in np.unique(v.values):
+        idx = (v == f)
+        plt.plot(x[idx], y[idx], ls='None', marker='o', ms=3, label=f)
+    plt.legend(loc='upper left')
+    # plt.title("${:.1f} \\times {:.1f}$ km$^2$ area centered on "
+    #           "lng = ${:.3f}$, lat = ${:.3f}$"
+    #           .format(L/1e+3, L/1e+3, lng, lat))
+    plt.xlabel('Eastings (m)')
+    plt.ylabel('Northings (m)')
+    if show:
+        plt.show()
 
-    gp_pred_list = [ ]
-    for l, pars in enumerate(layer_pars):
-        # Figure out all these auto-magical lengthscales
-        nx, ny = pars.shape
-        xLS = 0.5 * Lx/(nx - 0.99999)
-        yLS = 0.5 * Ly/(ny - 0.99999)
-        xvals = xmin + Lx*np.arange(nx)/(nx - 0.99999)
-        yvals = ymin + Ly*np.arange(ny)/(ny - 0.99999)
-        xg, yg = np.meshgrid(xvals, yvals)
-        # Set up and fit a shitty GP, and add it to the stack
-        k = GPy.kern.RBF(input_dim=2,
-                         lengthscale=(xLS, yLS), ARD=True)
-        X = np.vstack([xg.ravel(), yg.ravel()]).T
-        Y = pars.reshape(-1,1)
-        gp = GPy.models.GPRegression(X[:], Y, kernel=k)
-        gp.Gaussian_noise.variance = 0.001
-        gpmu, gpsig = gp.predict(Xpred)
-        # gp.plot()
-        # plt.show()
-        gp_pred_list.append(gpmu)
+def fieldobs_lookup(readings):
 
-    # Read out the formation at the surface
-    gpz = np.array(gp_pred_list).reshape(len(layer_pars), len(Xpred))
-    print "gpz.shape =", gpz.shape
-    print "gpz =", gpz
-    synthform = np.zeros(len(Xpred))
-    for i, xy in enumerate(Xpred):
-        for l in range(len(layer_pars)):
-            if gpz[l,i] > 0:
-                synthform[i] = l
-                break
-    print "synthform =", synthform
-    
-    # Make a contour plot, because why not
-    gridshape = autoshape(sensors)
-    x, y = Xpred.T
-    xg, yg = Xpred.reshape(2, *gridshape)
-    zg = synthform.reshape(*gridshape)
-    # plt.contourf(xg, yg, zg, alpha=0.5)
-    # plt.colorbar()
-    print "x =", x
-    print "y =", y
-    for l in range(len(layer_pars)):
-        idx = (synthform == l)
-        plt.plot(x[idx], y[idx], label='layer {}'.format(l), ls='None', marker='o')
-    plt.legend()
-
+    from gascoyne_config import config_layers
+    readstr = [ ]
+    for i, v in enumerate(readings):
+        if v in config_layers.index:
+            readstr.append(config_layers.loc[v,'name'])
+        else:
+            readstr.append('Unknown layer')
+    return readstr
 
 def main_contours():
     """
@@ -165,11 +141,44 @@ def main_contours():
     magReadings = np.loadtxt("magReadings.csv", delimiter=',')
     gravSensors = np.loadtxt("gravSensors.csv", delimiter=',')
     gravReadings = np.loadtxt("gravReadings.csv", delimiter=',')
-    samples = np.load("output.npz")
+    samples = np.load(pickaxe_npz)
+    N = len(samples['magReadings'])
 
     # Make a few plots of sensors
-    plot_sensor(magSensors, magReadings, samples['magReadings'], units='nT')
-    plot_sensor(gravSensors, gravReadings, samples['gravReadings'], units='mgal')
+    plot_sensor(magSensors, magReadings, samples['magReadings'][N/2:],
+                units='nT', show=False) #, energy=samples['energy'][N/2:])
+    plt.savefig('mag_contours.png')
+    plt.show()
+    plot_sensor(gravSensors, gravReadings, samples['gravReadings'][N/2:],
+                units='mgal', show=False) #, energy=samples['energy'][N/2:])
+    plt.savefig('grav_contours.png')
+    plt.show()
+
+def main_fieldobs():
+    """
+    The main routine to show simulated field observations
+    """
+
+    # First show the data we expect
+    fieldSensors = pd.read_csv('fieldobsSensors.csv', names=['x','y'], comment='#')
+    fieldReadings = pd.read_csv('fieldobsReadings.csv', names=['val'], comment='#')
+    fieldLabels = fieldSensors.assign(val=fieldobs_lookup(fieldReadings.val))
+    fig = plt.figure(figsize=(6,6))
+    display_ground_truth(fieldLabels, show=False)
+    plt.title('Field Observations')
+    plt.savefig('boundary_data.png')
+
+    # Now show samples
+    samples = np.load(pickaxe_npz)
+    fig = plt.figure(figsize=(6,6))
+    i = len(samples['fieldReadings'])
+    readings = samples['fieldReadings'][i-1]
+    fieldLabels.val = fieldobs_lookup(readings)
+    display_ground_truth(fieldLabels, show=False)
+    plt.title('Forward-Modeled Field Observations, '
+              'Sample {} from MCMC Chain'.format(i))
+    plt.savefig('boundary_fwdmodel_endchain.png')
+    plt.close()
 
 def main_boundarymovie():
     """
@@ -180,7 +189,7 @@ def main_boundarymovie():
     magReadings = np.loadtxt("magReadings.csv", delimiter=',')
     gravSensors = np.loadtxt("gravSensors.csv", delimiter=',')
     gravReadings = np.loadtxt("gravReadings.csv", delimiter=',')
-    samples = np.load("output.npz")
+    samples = np.load(pickaxe_npz)
 
     # Try fitting a few GP layers
     layer_labels = ['layer{}ctrlPoints'.format(i) for i in range(4)]
@@ -194,3 +203,4 @@ def main_boundarymovie():
 
 if __name__ == "__main__":
     main_contours()
+    # main_fieldobs()

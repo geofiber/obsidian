@@ -191,6 +191,31 @@ namespace obsidian
       return l;
     }
 
+    template<>
+    double likelihood<ForwardModel::FIELDOBS>(const FieldObsResults& synthetic, const FieldObsResults& real,
+                                              const FieldObsSpec& spec)
+    {
+      if (real.readings.size() == 0)
+        return 0.0;
+
+      // RS 2018/03/23:  For now let's just assume that each observation
+      // takes a categorical value (a layer index) and has some constant,
+      // independent probability of being wrong for each point (say, 5%).
+      // We can revisit these assumptions when we have a working version.
+      double l = 0;
+      double p = spec.noiseProb;
+      double lnp = std::log(p);
+      double ln1mp = std::log(1.0 - p);
+      for (uint i = 0; i < synthetic.readings.size(); i++)
+      {
+        double t = ((real.readings[i] == synthetic.readings[i]) ? ln1mp : lnp);
+        l += t;
+        VLOG(3) << "Field Observation Reading " << i << " likelihood:" << t;
+      }
+      VLOG(2) << "Field Observation Likelihood: " << l;
+      return l;
+    }
+
     std::vector<double> likelihoodAll(const GlobalResults& synthetic, const GlobalResults& real, const GlobalSpec& spec,
                                       const std::set<ForwardModel>& enabled)
     {
@@ -203,6 +228,7 @@ namespace obsidian
           enabled.count(ForwardModel::CONTACTPOINT) ?
               likelihood<ForwardModel::CONTACTPOINT>(synthetic.cpoint, real.cpoint, spec.cpoint) : 0.0);
       lh.push_back(enabled.count(ForwardModel::THERMAL) ? likelihood<ForwardModel::THERMAL>(synthetic.therm, real.therm, spec.therm) : 0.0);
+      lh.push_back(enabled.count(ForwardModel::FIELDOBS) ? likelihood<ForwardModel::FIELDOBS>(synthetic.field, real.field, spec.field) : 0.0);
       return lh;
     }
   }

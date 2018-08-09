@@ -94,7 +94,7 @@ namespace stateline
       // Append a test sample to the chain
       Eigen::VectorXd m(5);
       m << 1.0, 2.0, 3.0, 4.0, 5.0;
-      chains.initialise(0, State { m, 666.0, 1.0, true, SwapType::NoAttempt });
+      chains.initialise(0, State { m, 1.0, 666.0, 1.0, true, SwapType::NoAttempt });
 
       ASSERT_EQ(1U, chains.length(0));
       EXPECT_DOUBLE_EQ(666.0, chains.lastState(0).energy);
