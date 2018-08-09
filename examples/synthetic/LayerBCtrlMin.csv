@@ -4,5 +4,4 @@
 # The top left of this file is the northern-most, western-most control point.
 # All numbers are metres, and positive numbers indicate increasing depth.
 
--250.0
-
+-3000.0,-3000.0

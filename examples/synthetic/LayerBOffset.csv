@@ -9,4 +9,4 @@
 # represent two-way times. The distances are computed through the P-wave
 # velocity parameter.
 
-750.0
+-2000.0,2000.0
