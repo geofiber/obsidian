@@ -22,7 +22,10 @@ namespace stateline
       static std::mt19937 generator(rd());
       static std::uniform_real_distribution<> rand; // defaults to [0,1)
 
-      if (std::isinf(newState.energy))
+      // RS 2018/07/24:  Should have added a guard against NaNs here, duh.
+      if (std::isinf(newState.energy) or std::isnan(newState.energy))
+        return false;
+      if (std::isinf(newState.logDensityRatio) or std::isnan(newState.logDensityRatio))
         return false;
       double deltaEnergy = newState.energy - oldState.energy;
       double probToAccept = std::min(1.0, std::exp(-1.0 * beta * (deltaEnergy + newState.logDensityRatio)));
