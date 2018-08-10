@@ -100,6 +100,7 @@ namespace obsidian
       mtReadings.push_back(stateMt);
       fieldReadings.row(i) = results[i].field.readings;
     }
+    /*
     Eigen::MatrixXcd mtReadingMatrix = Eigen::MatrixXcd::Zero(size, nMt * maxFreqs * 4);
     for (uint i = 0; i < size; i++)
     {
@@ -111,11 +112,12 @@ namespace obsidian
         c += maxFreqs;
       }
     }
+    */
     writer.write<double>("gravReadings", gravReadings);
     writer.write<double>("magReadings", magReadings);
     writer.write<double>("thermReadings", thermReadings);
-    writer.write<std::complex<double>>("mtReadings", mtReadingMatrix);
-    writer.write<double>("mtNumFreqs", nFreqs);
+    // writer.write<std::complex<double>>("mtReadings", mtReadingMatrix);
+    // writer.write<double>("mtNumFreqs", nFreqs);
     writer.write<int>("fieldReadings", fieldReadings.cast<int>());
   }
 
