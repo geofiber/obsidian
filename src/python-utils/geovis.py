@@ -148,8 +148,30 @@ class MasonView(object):
         vv.ColormapEditor(a)
         app.Run()
 
+    def show_slice(self, vfunc, z=0):
+        """
+        Displays a 2-D horizontal slice through a voxelized property.
+        :param vfunc: function accepting this MasonView instance and
+            returning a 3-D np.array of some voxelized property
+        :param z: float index of the slice
+        """
+        vox = vfunc(self)
+        if z < 0.5 or z > vox.shape[0] - 0.5:
+            raise IndexError(
+                    "requested slice out of bounds ({} not in [{},{}])"
+                    .format(z, vox.shape[0], vox.shape[-1]))
+        iz, fz = int(z - 0.49999), z - 0.49999 - int(z - 0.49999)
+        zslice = (1-fz)*vox[iz,:,:] + fz*vox[iz+1,:,:]
+        xg, yg = np.meshgrid(np.arange(vox.shape[2]), np.arange(vox.shape[1]))
+        plt.contourf(xg, yg, zslice)
+        plt.colorbar()
+        plt.show()
 
-if __name__ == "__main__":
+def main_gascoyne():
+    """
+    Displays a volume rendering of the layer occupancy probability
+    for each layer in turn.
+    """
     print "Initializing from", args.npzfname[0]
     view = MasonView(args.npzfname[0])
     for fn in args.npzfname[1:]:
@@ -157,3 +179,20 @@ if __name__ == "__main__":
         view.add_samples(MasonView(fn))
     for i in range(len(view.layers)):
         view.show_vox(lambda v: MasonView.meanlayer(v, i))
+
+def main_moomba():
+    """
+    A view for the Moomba layers, which takes a slice through the
+    modeled volume 3.5 km down.
+    """
+    print "Initializing from", args.npzfname[0]
+    view = MasonView(args.npzfname[0])
+    for fn in args.npzfname[1:]:
+        print "Adding samples from", fn
+        view.add_samples(MasonView(fn))
+    # view.show_vox(lambda v: MasonView.meanlayer(v, 4))
+    view.show_slice(lambda v: MasonView.meanlayer(v, 4), 3.5)
+
+if __name__ == "__main__":
+    main_gascoyne()
+    # main_moomba()

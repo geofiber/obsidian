@@ -14,11 +14,16 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import GPy
 
-runtag = 'gascoyne_v3'
+pickaxe_npz = ('/Users/rscalzo/Desktop/Projects/Professional/Geoscience'
+               '/Formation Boundaries/sandbox/moomba-dk-run06.npz')
+pickaxe_npz = ('/Users/rscalzo/Desktop/Projects/Professional/Geoscience'
+               '/Formation Boundaries/sandbox/gascoyne_v4-thin1000.npz')
+mason_npz   = ('/Users/rscalzo/Desktop/Projects/Professional/Geoscience'
+               '/Formation Boundaries/sandbox/moomba-dk-run01.npz')
 
 
 def plot_sensor(sensors, readings, chain, sample=None,
-                units='unknown units', show=True):
+                units='unknown units', show=True, energy=None):
     """
     Plots the value of a sensor against the forward model:
         Contour plots of real data and forward models
@@ -36,9 +41,13 @@ def plot_sensor(sensors, readings, chain, sample=None,
     :param units:  str describing the units of sensor readings
     :param show:  call plt.show()?  default True; set to False if you're
         making a multi-panel plot or want to save fig in calling routine
+    :param energy:  optional log posterior estimate(s)
     """
     x, y, z = sensors.T
     d = readings - readings.mean()
+    if energy is not None:    # HACK:  take MAP estimate
+        sample = np.argmin(energy)
+        print "Taking MAP estimate, energy =", energy[sample]
     if sample is None:
         print "Averaged fwd models over chain of shape", chain.shape
         f = chain.mean(axis=0) - chain.mean()
@@ -56,8 +65,17 @@ def plot_sensor(sensors, readings, chain, sample=None,
 
     # Contour map of residuals in f
     fig = plt.figure(figsize=(6,7))
-    ax1 = plt.subplot2grid((3,1), (0,0), rowspan=2)
+    ax1 = plt.subplot2grid((3,1), (0,0), rowspan=1)
     plt.tricontourf(x, y, d, alpha=0.5, label='Data')
+    plt.colorbar()
+    plt.tricontour(x, y, f, colors='k', label='Fwd Model')
+    plt.xlabel("Eastings (m)")
+    plt.ylabel("Northings (m)")
+    plt.legend(loc='upper right')
+
+    # Contour map of residuals in f
+    ax1 = plt.subplot2grid((3,1), (1,0), rowspan=1)
+    plt.tricontourf(x, y, d-f, alpha=0.95, label='Data', cmap='coolwarm')
     plt.colorbar()
     plt.tricontour(x, y, f, colors='k', label='Fwd Model')
     plt.xlabel("Eastings (m)")
@@ -123,16 +141,18 @@ def main_contours():
     magReadings = np.loadtxt("magReadings.csv", delimiter=',')
     gravSensors = np.loadtxt("gravSensors.csv", delimiter=',')
     gravReadings = np.loadtxt("gravReadings.csv", delimiter=',')
-    samples = np.load(runtag + ".npz")
+    samples = np.load(pickaxe_npz)
     N = len(samples['magReadings'])
 
     # Make a few plots of sensors
     plot_sensor(magSensors, magReadings, samples['magReadings'][N/2:],
-                units='nT', show=False)
+                units='nT', show=False) #, energy=samples['energy'][N/2:])
     plt.savefig('mag_contours.png')
+    plt.show()
     plot_sensor(gravSensors, gravReadings, samples['gravReadings'][N/2:],
-                units='mgal', show=False)
+                units='mgal', show=False) #, energy=samples['energy'][N/2:])
     plt.savefig('grav_contours.png')
+    plt.show()
 
 def main_fieldobs():
     """
@@ -145,11 +165,11 @@ def main_fieldobs():
     fieldLabels = fieldSensors.assign(val=fieldobs_lookup(fieldReadings.val))
     fig = plt.figure(figsize=(6,6))
     display_ground_truth(fieldLabels, show=False)
-    plt.title('Field Observations'.format(runtag))
+    plt.title('Field Observations')
     plt.savefig('boundary_data.png')
 
     # Now show samples
-    samples = np.load(runtag + ".npz")
+    samples = np.load(pickaxe_npz)
     fig = plt.figure(figsize=(6,6))
     i = len(samples['fieldReadings'])
     readings = samples['fieldReadings'][i-1]
@@ -169,7 +189,7 @@ def main_boundarymovie():
     magReadings = np.loadtxt("magReadings.csv", delimiter=',')
     gravSensors = np.loadtxt("gravSensors.csv", delimiter=',')
     gravReadings = np.loadtxt("gravReadings.csv", delimiter=',')
-    samples = np.load(runtag + ".npz")
+    samples = np.load(pickaxe_npz)
 
     # Try fitting a few GP layers
     layer_labels = ['layer{}ctrlPoints'.format(i) for i in range(4)]
@@ -183,4 +203,4 @@ def main_boundarymovie():
 
 if __name__ == "__main__":
     main_contours()
-    main_fieldobs()
+    # main_fieldobs()
