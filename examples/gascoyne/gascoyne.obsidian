@@ -433,6 +433,11 @@ cacheLength = 1000
 # that width
 [proposal]
 
+# Proposal distribution (either Normal or CrankNicholson)
+distribution = CrankNicholson
+
+# Static step size parameter rho for Crank-Nicholson proposal
+ro = 0.5
 
 # The initial value of sigma (the proposal width) for the lowest temperature
 # chain

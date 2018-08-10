@@ -5,7 +5,7 @@
 pollRate=1
 heartbeatRate=1000
 heartbeatPollRate=500
-heartbeatTimeout=2000
+heartbeatTimeout=120000
 
 # If any forward models are shorter than about 10 milliseconds
 # the delegator poll rate really should be zero (which means no wait between polls)

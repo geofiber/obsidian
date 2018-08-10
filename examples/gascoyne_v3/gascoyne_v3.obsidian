@@ -377,12 +377,12 @@ noiseProb = 0.01
 #The number of chains in a sequence of temperatures. The first chain has
 #temperature=1, and then all subsequent chains have a temperature equal to
 #initialTempFactor times the previous temperature.
-chains = 12
+chains = 16
 
 # The number of totally disconnected sets of chains. Total chains is the
 # product of the chains variable and the stacks variable. Different stacks are
 # compared to check convergence.
-stacks = 2
+stacks = 4
 
 # The walltime in seconds of the MCMC run. Obsidian will quit after this number
 # of seconds has elapsed

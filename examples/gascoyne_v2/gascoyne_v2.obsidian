@@ -195,7 +195,6 @@ sensorReadings = magReadings.csv
 # The resolution of the forward model voxelisation of the world
 # x y z
 gridResolution = 20 20 40
->>>>>>> 1da46021c4b2bce477f52fa5138649e452db9ee8
 
 # voxelisation supersample; horizontal antialiasing; depricated; do not use
 supersample = 0

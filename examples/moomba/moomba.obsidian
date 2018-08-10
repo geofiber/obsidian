@@ -332,6 +332,30 @@ noiseAlpha = 10
 noiseBeta = 0.2
 
 
+######################
+# Field Observations #
+######################
+# Section containing the variables for the geological field observation
+# sensor and model
+[fieldobs]
+
+
+# Enable field observations as a sensor. If disabled, all other field
+# observation inputs will be ignored.
+enabled = false
+
+# CSV file containing a list of field observation sensor locations.
+sensorLocations = fieldobsSensors.csv
+
+# CSV file containing the formations (layer boundary index) corresponding
+# to each sensor location defined in the sensorLocations input file
+sensorReadings = fieldobsReadings.csv
+
+# noise probability: The probability that a single visual identification of
+# a formation (categorical layer index) will be incorrect
+noiseProb = 0.01
+
+
 ########
 # MCMC #
 ########
@@ -341,12 +365,12 @@ noiseBeta = 0.2
 #The number of chains in a sequence of temperatures. The first chain has
 #temperature=1, and then all subsequent chains have a temperature equal to
 #initialTempFactor times the previous temperature.
-chains = 16
+chains = 12
 
 # The number of totally disconnected sets of chains. Total chains is the
 # product of the chains variable and the stacks variable. Different stacks are
 # compared to check convergence.
-stacks = 2
+stacks = 4
 
 # The walltime in seconds of the MCMC run. Obsidian will quit after this number
 # of seconds has elapsed
@@ -355,11 +379,12 @@ wallTime = 86400
 # The number of states added to the highest temperature chain before it
 # initiates a swap with the next coldest chain. This will propagate all the way
 # down to the lowest temperature chain.
-swapInterval = 50
+# (RS 2018/07/25:  changed to 5 from 50)
+swapInterval = 5
 
 # the factor that defines the geometric progression of chain temperatures for
 # each stack. t_n+1 = t_n * initialTempFactor, with t_1 = 1
-initialTempFactor = 1.1
+initialTempFactor = 2.0
 
 # The swap rate that the chains are trying to reach. Note that 0.24 is optimal
 # for an infinite dimensional problem, 0.5 is optimal for a 1 dimensional
@@ -396,6 +421,12 @@ cacheLength = 1000
 # that width
 [proposal]
 
+# Proposal distribution (either Normal or CrankNicolson)
+distribution = CrankNicolson
+# distribution = Normal
+
+# Static step size parameter rho for Crank-Nicolson proposal
+ro = 0.5
 
 # The initial value of sigma (the proposal width) for the lowest temperature
 # chain
@@ -403,7 +434,7 @@ initialSigma = 0.1
 
 # the factor that defines the geometric progression of chain sigmas for
 # each stack. s_n+1 = s_n * initialSigmaFactor, with s_1 = initialSigma
-initialSigmaFactor = 1.1
+initialSigmaFactor = 1.4
 
 # The maximum multiplicative factor by which sigma can adapt
 maxFactor = 1.25
