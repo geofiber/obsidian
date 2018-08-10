@@ -60,8 +60,9 @@ namespace stateline
             acceptRates_(s.stacks * s.chains),
             swapRates_(s.stacks * s.chains),
             lowestEnergies_(s.stacks * s.chains),
-            chainmean_(s.stacks * s.chains),
-            chaincov_(s.stacks * s.chains),
+            SX_(s.stacks * s.chains),
+            SX2_(s.stacks * s.chains),
+            qcov_(s.stacks * s.chains),
             s_(s),
             recover_(d.recover),
             numOutstandingJobs_(0),
@@ -128,10 +129,12 @@ namespace stateline
         // RS 2018/03/09:  Initialize the chain means and covariances.
         for (uint i = 0; i < chains_.numTotalChains(); i++)
         {
-          chainmean_[i] = Eigen::VectorXd(stateDim);
-          chaincov_[i] = Eigen::MatrixXd(stateDim, stateDim);
-          chainmean_[i].setZero(stateDim);
-          chaincov_[i].setZero(stateDim, stateDim);
+          SX_[i] = Eigen::VectorXd(stateDim);
+          SX2_[i] = Eigen::MatrixXd(stateDim, stateDim);
+          qcov_[i] = Eigen::MatrixXd(stateDim, stateDim);
+          SX_[i].setZero(stateDim);
+          SX2_[i].setZero(stateDim, stateDim);
+          qcov_[i].setZero(stateDim, stateDim);
         }
 
         // Listen for replies. As soon as a new state comes back,
@@ -216,7 +219,7 @@ namespace stateline
           lowestEnergies_[id] = std::min(lowestEnergies_[id], chains_.lastState(id).energy);
 
           // RS 2018/03/09:  Update the chain covariance.
-          updateChaincov(id);
+          updateChainsums(id);
 
           // Check if we need to adapt the step size for this chain
           if (lengths_[id] % s_.proposalAdaptInterval == 0)
@@ -334,14 +337,37 @@ namespace stateline
       return chains_;
     }
 
-    //! RS 2018/03/09:  Get the parameter covariance of MCMC chain id.
+    //! RS 2018/08/10:  Get the parameter mean of MCMC chain id.
     //! Relevant mostly for multivariate adaptive Metropolis proposals.
     //!
-    //! \return A const reference to the chain covariance.
+    //! \return The chain mean.
+    //!
+    const Eigen::VectorXd &chainmean(uint id)
+    {
+      return SXm/chains_[id].length();
+    }
+
+    //! RS 2018/08/10:  Get the parameter covariance of MCMC chain id.
+    //! Relevant mostly for multivariate adaptive Metropolis proposals.
+    //!
+    //! \return The chain covariance.
     //!
     const Eigen::MatrixXd &chaincov(uint id) const
     {
-      return chaincov_[id];
+      uint n = chains_[id].length();
+      Eigen::MatrixXd eid = 1.0e-10*Eigen::MatrixXd::Identity(n, n);
+      return (n < 2) ? eid : (SX2m - SXm*SXm.transpose()/n)/(n-1) + eid;
+    }
+
+    //! RS 2018/08/10:  Get the adaptive Metropolis proposal covariance,
+    //! a weighted sum of the current chain covariance and an isotropic
+    //! Gaussian (i.e. random walk).
+    //!
+    //! \return A const reference to the covariance matrix.
+    //!
+    const Eigen::MatrixXd &adaptive_qcov(uint id) const
+    {
+      return qcov_[id];
     }
 
   private:
@@ -387,8 +413,8 @@ namespace stateline
       //! to the AM proposal function if we've got at least some target
       //! number of samples in this chain.
       uint amL = s_.adaptAMLength;
-      PropFn& adapt_propFn = ((amL > 0 && amL < chains_[id].length())
-              ? propFn : std::bind(&multiGaussianProposal, ph::_1, ph::_2, 0.0, 0.0));
+      PropFn& adapt_propFn = (amL > 0) ? propFn :
+          std::bind(&multiGaussianProposal, ph::_1, ph::_2, adaptive_qcov(), 0.0, 0.0);
       propStates_.row(id) = adapt_propFn(chains_.lastState(id).sample, chains_.sigma(id));
       policy.submit(id, propStates_.row(id));
       numOutstandingJobs_++;
@@ -489,26 +515,28 @@ namespace stateline
     //!
     //! \param id The id of the chain to be updated.
     //!
-    void updateChaincov(uint id)
+    void updateChainsums(uint id)
     {
-      uint k = chains_[id].length();
-      if (k > 1)
-      {
-        // Declare a few elements to make this easier
-        Eigen::VectorXd Xk = chains.state(id, k-1).sample;
-        int n = Xk.size();
-        Eigen::MatrixXd eid = 1.0e-10*Eigen::MatrixXd::Identity(n, n);
-        Eigen::VectorXd SXm = (k-1)*chainmean_[id];
-        Eigen::MatrixXd SX2m = (k-2)*(chaincov_[id] - eid) + (k-1)*SXm*SXm.transpose();
+      uint n = chains_[id].length();
+      if (n == 0) return;
 
-        // Update SXm and SX2m
-        SXm += Xk;
-        SX2m += Xk*Xk.transpose():
+      // Update sums used to make the covariance
+      Eigen::VectorXd Xk = chains.state(id, n-1).sample;
+      SXm += Xk;
+      SX2m += Xk*Xk.transpose():
 
-        // Update mean and covariance
-        chainmean_[id] = SXm/(1.0*k);
-        chaincov_[id] = (SX2m - SXm*SXm.transpose()/(1.0*k))/(1.0*k) + eid;
-      }
+      // Build *correlation* (whitened covariance) matrix of chain
+      uint amL = s_.adaptAMLength;
+      uint n = chains_[id].length();
+      Eigen::MatrixXd chaincov_id = chaincov_(id);
+      Eigen::VectorXd chainscale_id = chaincov_id.diag();
+      qcov_[id] = chaincov_id / (chainscale_id * chainscale_id.transpose());
+
+      // Regularize with round Gaussian so that the proposal transitions
+      // smoothly from isotropic MHRW as it gains samples
+      int m = Xk.size();
+      qcov_[id] = (n*qcov_[id] + amL*Eigen::MatrixXd::Identity(m, m))
+                / (1.0*(n + amL));
     }
 
     void updateAccepts(uint id, bool acc)
@@ -573,9 +601,12 @@ namespace stateline
     // Matrix of proposed states
     Eigen::MatrixXd propStates_;
 
-    // RS 2018/03/09:  Accumulated chain mean and covariance.
-    std::vector<Eigen::MatrixXd> chaincov_;
-    std::vector<Eigen::VectorXd> chainmean_;
+    // RS 2018/08/10:  Accumulated sums for chain mean and covariance.
+    std::vector<Eigen::VectorXd> SX_;
+    std::vector<Eigen::MatrixXd> SX2_;
+
+    // RS 2018/08/10:  Adaptive multivariate MHRW proposal covariance.
+    std::vector<Eigen::MatrixXd> qcov_;
 
     // Whether a chain is locked. A locked chain will wait for any outstanding
     // job results and propagate the lock.
