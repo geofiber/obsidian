@@ -13,6 +13,7 @@
 
 #include <limits>
 #include <random>
+#include <functional>
 #include <iomanip>
 #include <chrono>
 #include <Eigen/Dense>
@@ -26,6 +27,8 @@
 #include "infer/diagnostics.hpp"
 #include "distrib/multigaussian.hpp"
 #include "comms/transport.hpp"
+
+namespace ph = std::placeholders;
 
 namespace stateline
 {
@@ -59,6 +62,9 @@ namespace stateline
             acceptRates_(s.stacks * s.chains),
             swapRates_(s.stacks * s.chains),
             lowestEnergies_(s.stacks * s.chains),
+            SX_(s.stacks * s.chains),
+            SX2_(s.stacks * s.chains),
+            qcov_(s.stacks * s.chains),
             s_(s),
             recover_(d.recover),
             numOutstandingJobs_(0),
@@ -122,6 +128,14 @@ namespace stateline
         uint stateDim = initialStates[0].size();
         EpsrConvergenceCriteria cc(chains_.numStacks(), stateDim);
 
+        // RS 2018/03/09:  Initialize the chain means and covariances.
+        for (uint i = 0; i < chains_.numTotalChains(); i++)
+        {
+          SX_[i] = Eigen::VectorXd::Zero(stateDim);
+          SX2_[i] = Eigen::MatrixXd::Zero(stateDim, stateDim);
+          qcov_[i] = Eigen::MatrixXd::Zero(stateDim, stateDim);
+        }
+
         // Listen for replies. As soon as a new state comes back,
         // add it to the corresponding chain, and submit a new proposed state
         auto lastLogTime = steady_clock::now();
@@ -153,9 +167,10 @@ namespace stateline
           bool isColdestChainInStack = id % chains_.numChains() == 0;
 
           // Handle the new proposal and add a new state to the chain
-	  double proposalDensity = propPdfFn(propStates_.row(id), sigmas_[id]);
-	  double lastsampleDensity = propPdfFn(chains_.lastState(id).sample, sigmas_[id]);
-	  double logDensityRatio = proposalDensity - lastsampleDensity;
+	      double proposalDensity = propPdfFn(propStates_.row(id), sigmas_[id]);
+	      double lastsampleDensity = propPdfFn(chains_.lastState(id).sample, sigmas_[id]);
+	      double logDensityRatio = proposalDensity - lastsampleDensity;
+          VLOG(2) << "logDensityRatio = " << logDensityRatio;
           State propState { propStates_.row(id), energy, logDensityRatio, chains_.beta(id), false, SwapType::NoAttempt };
           bool propAccepted = chains_.append(id, propState);
           lengths_[id] += 1;
@@ -202,6 +217,9 @@ namespace stateline
 
           // Log the best energy state so far
           lowestEnergies_[id] = std::min(lowestEnergies_[id], chains_.lastState(id).energy);
+
+          // RS 2018/03/09:  Update the chain covariance.
+          updateChainsums(id);
 
           // Check if we need to adapt the step size for this chain
           if (lengths_[id] % s_.proposalAdaptInterval == 0)
@@ -319,6 +337,41 @@ namespace stateline
       return chains_;
     }
 
+    //! RS 2018/08/10:  Get the parameter mean of MCMC chain id.
+    //! Relevant mostly for multivariate adaptive Metropolis proposals.
+    //!
+    //! \return The chain mean.
+    //!
+    const Eigen::VectorXd chainmean(uint id)
+    {
+      uint n = lengths_[id];
+      return ((n < 1) ? 0.0 : 1.0/n) * SX_[id];
+    }
+
+    //! RS 2018/08/10:  Get the parameter covariance of MCMC chain id.
+    //! Relevant mostly for multivariate adaptive Metropolis proposals.
+    //!
+    //! \return The chain covariance.
+    //!
+    const Eigen::MatrixXd chaincov(uint id) const
+    {
+      int stateDim = SX2_[id].rows();
+      uint n = lengths_[id];
+      Eigen::MatrixXd eid = 1.0e-10*Eigen::MatrixXd::Identity(stateDim, stateDim);
+      return (n < 2) ? eid : (SX2_[id] - SX_[id]*SX_[id].transpose()/n)/(n-1) + eid;
+    }
+
+    //! RS 2018/08/10:  Get the adaptive Metropolis proposal covariance,
+    //! a weighted sum of the current chain covariance and an isotropic
+    //! Gaussian (i.e. random walk).
+    //!
+    //! \return A const reference to the covariance matrix.
+    //!
+    const Eigen::MatrixXd &adaptive_qcov(uint id) const
+    {
+      return qcov_[id];
+    }
+
   private:
 
     //! Initialise the sampler.
@@ -358,7 +411,13 @@ namespace stateline
     template <class AsyncPolicy, class PropFn>
     void propose(AsyncPolicy &policy, uint id, PropFn &propFn)
     {
-      propStates_.row(id) = propFn(chains_.lastState(id).sample, chains_.sigma(id));
+      //! RS 2018/03/12:  If we're doing adaptive Metropolis, change over
+      //! to the AM proposal function if we've got at least some target
+      //! number of samples in this chain.
+      int stateDim = chains_.lastState(id).sample.size();
+      Eigen::MatrixXd qcov = (s_.adaptAMLength <= 0)
+          ? Eigen::MatrixXd::Identity(stateDim, stateDim) : qcov_[id];
+      propStates_.row(id) = propFn(chains_.lastState(id).sample, chains_.sigma(id), qcov);
       policy.submit(id, propStates_.row(id));
       numOutstandingJobs_++;
     }
@@ -454,6 +513,37 @@ namespace stateline
       }
     }
 
+    //! RS 2018/03/09:  Update the chain covariances.
+    //!
+    //! \param id The id of the chain to be updated.
+    //!
+    void updateChainsums(uint id)
+    {
+      uint n = lengths_[id];
+      if (n == 0) return;
+
+      // Update sums used to make the covariance
+      VLOG(2) << "updating chainsums";
+      Eigen::VectorXd Xk = chains_.lastState(id).sample;
+      SX_[id] += Xk;
+      SX2_[id] += Xk*Xk.transpose();
+
+      // Build *correlation* (whitened covariance) matrix of chain
+      uint amL = s_.adaptAMLength;
+      // Eigen::MatrixXd chaincov_id = chaincov(id);
+      // Eigen::VectorXd chainscale_id = chaincov_id.diagonal().cwiseSqrt();
+      // double chainscale_mu = chainscale_id.sum()/chainscale_id.size();
+      // qcov_[id] = chaincov_id.cwiseQuotient(chainscale_id * chainscale_id.transpose());
+      // Actually we want to use covariance matrix, thetas already whitened
+      qcov_[id] = chaincov(id);
+
+      // Regularize with round Gaussian so that the proposal transitions
+      // smoothly from isotropic MHRW as it gains samples
+      int stateDim = Xk.size();
+      qcov_[id] = (n*qcov_[id] + amL*Eigen::MatrixXd::Identity(stateDim, stateDim)) / (1.0*(n + amL));
+      VLOG(2) << "done updating chainsums";
+    }
+
     void updateAccepts(uint id, bool acc)
     {
       uint oldSize = acceptBuffers_[id].size();
@@ -537,6 +627,13 @@ namespace stateline
     std::vector<double> acceptRates_;
     std::vector<double> swapRates_;
     std::vector<double> lowestEnergies_;
+
+    // RS 2018/08/10:  Accumulated sums for chain mean and covariance.
+    std::vector<Eigen::VectorXd> SX_;
+    std::vector<Eigen::MatrixXd> SX2_;
+
+    // RS 2018/08/10:  Adaptive multivariate MHRW proposal covariance.
+    std::vector<Eigen::MatrixXd> qcov_;
 
     // The MCMC settings
     MCMCSettings s_;
