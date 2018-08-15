@@ -118,15 +118,10 @@ namespace stateline
       static std::normal_distribution<> rand; // Standard normal
 
       // Draw from a multivariate Gaussian
-      VLOG(2) << "proposing multigaussian";
       Eigen::VectorXd zero_mean = 0.0*state;
-      VLOG(2) << "mean.shape = (" << zero_mean.rows() << "," << zero_mean.cols() << ")";
       obsidian::distrib::MultiGaussian q(zero_mean, qcov);
-      VLOG(2) << "q.shape = (" << q.shape.first << "," << q.shape.second << ")";
       Eigen::VectorXd drawnvec = obsidian::distrib::drawValues(q, generator);
-      VLOG(2) << "drawnvec.shape = (" << drawnvec.rows() << "," << drawnvec.cols() << ")";
       Eigen::VectorXd myprop = state + sigma*drawnvec;
-      VLOG(2) << "done proposing multigaussian";
       return myprop;
     };
 

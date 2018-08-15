@@ -133,7 +133,7 @@ namespace stateline
         {
           SX_[i] = Eigen::VectorXd::Zero(stateDim);
           SX2_[i] = Eigen::MatrixXd::Zero(stateDim, stateDim);
-          qcov_[i] = Eigen::MatrixXd::Zero(stateDim, stateDim);
+          qcov_[i] = Eigen::MatrixXd::Identity(stateDim, stateDim);
         }
 
         // Listen for replies. As soon as a new state comes back,
@@ -417,6 +417,11 @@ namespace stateline
       int stateDim = chains_.lastState(id).sample.size();
       Eigen::MatrixXd qcov = (s_.adaptAMLength <= 0)
           ? Eigen::MatrixXd::Identity(stateDim, stateDim) : qcov_[id];
+      if (qcov.rows() == 0)
+      {
+        VLOG(2) << "qcov = NULL; reverting to I(" << stateDim << "," << stateDim << ")";
+        qcov = Eigen::MatrixXd::Identity(stateDim, stateDim);
+      }
       propStates_.row(id) = propFn(chains_.lastState(id).sample, chains_.sigma(id), qcov);
       policy.submit(id, propStates_.row(id));
       numOutstandingJobs_++;
@@ -523,7 +528,7 @@ namespace stateline
       if (n == 0) return;
 
       // Update sums used to make the covariance
-      VLOG(2) << "updating chainsums";
+      VLOG(3) << "updating chainsums";
       Eigen::VectorXd Xk = chains_.lastState(id).sample;
       SX_[id] += Xk;
       SX2_[id] += Xk*Xk.transpose();
@@ -541,7 +546,7 @@ namespace stateline
       // smoothly from isotropic MHRW as it gains samples
       int stateDim = Xk.size();
       qcov_[id] = (n*qcov_[id] + amL*Eigen::MatrixXd::Identity(stateDim, stateDim)) / (1.0*(n + amL));
-      VLOG(2) << "done updating chainsums";
+      VLOG(3) << "done updating chainsums";
     }
 
     void updateAccepts(uint id, bool acc)
