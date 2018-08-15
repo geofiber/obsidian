@@ -6,5 +6,5 @@
 #PBS -M david.kohn@sydney.edu.au
 ulimit -c unlimited
 module load gcc/4.9.3
-cd /project/RDS-FSC-obsidian-RW/obsidian-dk/experiments/07_20_2018/01
-../../../build2/mason -l-4 -x 32 -y 32 -z 32 -p prior.npz -o prior_voxels.npz
+cd /project/RDS-FSC-obsidian-RW/obsidian-dk/experiments/08_08_2018/01
+/project/RDS-FSC-obsidian-RW/obsidian-dk/builds/build2/mason -l-4 -x 32 -y 32 -z 32 -p prior.npz -o prior_voxels.npz

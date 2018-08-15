@@ -111,18 +111,9 @@ parse_job_id=`echo $parse_pbs | grep -oP "\K([0-9]+)"`
 all_jobs+=" ${parse_job_id}"
 
 #when the diagnostics are finished, move the obsidian.pbs.e* to rds dir
-cleanup_pbs=`qsub -q dtq -P $project_default -l select=1:ncpus=1:mem=16gb,walltime=24:00:00 -v path_obsidian_err=$path_obsidian_err,dir_rds=$dir_rds_experiment -W depend=afterok:$parse_job_id cleanup_obsidian.pbs`
+cleanup_pbs=`qsub -q dtq -P $project_default -l select=1:ncpus=1:mem=16gb,walltime=24:00:00 -v path_in=$path_obsidian_err,path_out=$dir_rds_experiment -W depend=afterok:$parse_job_id move_files.pbs`
 cleanup_job_id=`echo $cleanup_pbs | grep -oP "\K([0-9]+)"`
 all_jobs+=" ${cleanup_job_id}"
-
-#when pickaxe is finished, run diagnostics on output.npz
-#qsub run_diagnostics.pbs
-
-#when mason is finished, save mean layer voxels
-#qsub get_mean_layer_voxels.pbs
-
-#when mason is finished, move move voxels to rds dir/voxels and move output.npz to rds dir
-#qsub clean_up_mason.pbs
 
 if [ "$run_pickaxe" = true ]
 then
@@ -132,6 +123,9 @@ then
 	all_jobs+=" ${pickaxe_job_id}"
 fi
 
+#when pickaxe is finished, run diagnostics on output.npz
+#qsub run_diagnostics.pbs
+
 if [ "$run_mason" = true ]
 then
 	mason_pbs=`qsub -q $queue_default -P $project_default -l select=1:ncpus=4:mem=16GB,walltime=12:00:00 -v dir_project=$dir_project,dir_build=$dir_build,log_file=$log_file -W depend=afterok:$pickaxe_job_id mason.pbs`
@@ -140,6 +134,14 @@ then
 	all_jobs+=" ${mason_job_id}"
 fi
 
-#JOB_ID_data_transfer=`qsub -v dirname=$EXPERIMENT,target=$target_dir -W depend=afterok:$JOB_ID_obsidian data_transfer.pbs`
+#when mason is finished, save mean layer voxels
+mean_posterior_pbs=`qsub -q dtq -P $project_default -l select=1:ncpus=1:mem=16gb,walltime=06:00:00 -v dir_voxels=$dir_project -W depend=afterok:$mason_job_id get_mean_posterior_layers.pbs`
+cleanup_job_id=`echo $cleanup_pbs | grep -oP "\K([0-9]+)"`
+all_jobs+=" ${cleanup_job_id}"
+
+#when mason is finished, move voxels to rds dir/voxels and move output.npz to rds dir
+cleanup_mason_pbs=`qsub -q dtq -P $project_default -l select=1:ncpus=1:mem=16gb,walltime=24:00:00 -v path_in=$path_voxels,path_out=$dir_rds_experiment -W depend=afterok:$parse_job_id cleanup_mason.pbs`
+cleanup_mason_job_id=`echo $cleanup_mason_pbs | grep -oP "\K([0-9]+)"`
+all_jobs+=" ${cleanup_mason_pbs}"
 
 echo $all_jobs > current_jobs
