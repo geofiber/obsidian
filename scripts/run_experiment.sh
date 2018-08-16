@@ -33,7 +33,7 @@ obsidian_anneal_length=1
 #obsidian_pbs_walltime=00:30:00
 obsidian_input_stacks=4
 obsidian_input_chains=16
-obsidian_input_proposal=Normal
+obsidian_input_proposal=AdaptiveMulti
 pickaxe_walltime=12:00:00
 mason_walltime=12:00:00
 #pickaxe_walltime=00:30:00
@@ -45,9 +45,9 @@ no_shards=$(($obsidian_input_stacks * $obsidian_input_chains / $threads + 1))
 
 pickaxe_burnin=1000
 pickaxe_nthin=100
-pickaxe_output_file=output.npz
+pickaxe_output_file=$dir_project/output.npz
 
-log_file=details.log
+log_file=$dir_project/details.log
 
 # run all the subscripts and jobs
 run_all=true
