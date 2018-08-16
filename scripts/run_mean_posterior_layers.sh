@@ -2,7 +2,7 @@
 dir_rds_parent=/rds/PRJ-SIH4HPC/obsidian/experiments/08_08_2018
 script_copy_files=/project/RDS-FSC-obsidian-RW/obsidian-dk/scripts/standard_experiment/move_files.pbs
 pbs_script_get_mean_posterior=/project/RDS-FSC-obsidian-RW/obsidian-dk/scripts/mean_posterior_layers.pbs
-python_script_get_mean_posterior=/project/RDS-FSC-obsidian-RW/obsidian-dk/test_mason_voxelization/get_mean_posterior.py
+python_script_get_mean_posterior=/project/RDS-FSC-obsidian-RW/obsidian-dk/scripts/get_mean_posterior.py
 copy_data=false
 
 queue_default=defaultQ
