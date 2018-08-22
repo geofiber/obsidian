@@ -11,7 +11,7 @@ queue=$queue_bgh
 #queue=$queue_default
 
 dir_obsidian=/project/RDS-FSC-obsidian-RW/obsidian-dk
-dir_project=$dir_obsidian/experiments/08_16_2018/01
+dir_project=`pwd`
 dir_pbs_scripts=$dir_obsidian/scripts/standard_experiment
 dir_data=$dir_obsidian/datasets/gascoyne_rs_v4_2018_08_16
 dir_datasets=$dir_obsidian/datasets
@@ -19,7 +19,7 @@ specific_build=build-adaptive-multivar
 dir_builds=$dir_obsidian/builds
 dir_rds=/rds/PRJ-SIH4HPC/obsidian/experiments
 
-port=7020
+port=7025
 threads=5 #essentially CPUs per shard job divided by number of sensors, then rounded down to integer
 clear_old_job_files=false
 
@@ -49,10 +49,25 @@ pickaxe_output_file=$dir_project/output.npz
 
 log_file=$dir_project/details.log
 
+# run individual jobs of your choice, specify below
+run_custom=true
 # run all the subscripts and jobs
-run_all=true
+run_all=false
 # run none of the subscripts and jobs
+# if both run_all and run_none are true, nothing will be run
 run_none=false
+# copy data files; set to false if you don't want custom files overwritten
+copy_data_files=false
+
+if [ "$run_custom" = true ]; then
+	run_obsidian=false
+	run_obsidian_diagnostics=true
+	run_move_obsidian_error_log=false
+	run_mason=false
+	run_pickaxe=false
+	run_get_mean_layer_voxels=false
+	run_cleanup_mason=false
+fi
 
 if [ "$run_all" = true ]; then
 	run_obsidian=true
@@ -97,9 +112,12 @@ then
 fi
 
 # copy data files in
-cp -n ${dir_data}/*.csv $dir_project
-cp -n ${dir_data}/input.obsidian $dir_project
-cp -n ${dir_datasets}/obsidian_config $dir_project
+if [ "$copy_data_files" = true ]
+then
+	cp -n ${dir_data}/*.csv $dir_project
+	cp -n ${dir_data}/input.obsidian $dir_project
+	cp -n ${dir_datasets}/obsidian_config $dir_project
+fi
 
 # make rds dir
 mkdir -p $dir_rds_experiment
@@ -140,16 +158,15 @@ fi
 #when the obsidian job is finished, run diagnostics on obsidian.pbs.e*
 if [ "$run_obsidian_diagnostics" = true ] 
 then
+	script=$dir_pbs_scripts/parse_error_log.pbs
 	if [ "$run_obsidian" = true ]
 	then
 		fname_obsidian_err=obsidian.pbs.e$obsidian_job_id
 		path_obsidian_err=$dir_project/$fname_obsidian_err
-		script=$dir_pbs_scripts/parse_error_log.pbs
 		parse_pbs=`qsub -q $queue_default -P $project_default -l select=1:ncpus=1:mem=16gb,walltime=04:00:00 -v dir_project=$dir_project,fname_obsidian_err=$fname_obsidian_err -W depend=afterok:$obsidian_job_id $script` 
 	else
 		fname_obsidian_err="obsidian.pbs.e*"
 		path_obsidian_err=$dir_project/$fname_obsidian_err
-		script=$dir_pbs_scripts/parse_error_log.pbs
 		parse_pbs=`qsub -q $queue_default -P $project_default -l select=1:ncpus=1:mem=16gb,walltime=04:00:00 -v dir_project=$dir_project,fname_obsidian_err=$fname_obsidian_err $script` 
 	fi
 	parse_job_id=`echo $parse_pbs | grep -oP "\K([0-9]+)"`
