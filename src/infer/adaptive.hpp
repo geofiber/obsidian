@@ -75,13 +75,13 @@ namespace stateline
     //! 
     //! \param state The current state of the chain
     //! \param sigma The standard deviation of the distribution (step size of the proposal)
-    //! \param qcov A dummy variable to maintain consistent prototypes w/other proposals
+    //! \param qcovL A dummy variable to maintain consistent prototypes w/other proposals
     //! \param min The minimum bound of theta 
     //! \param max The maximum bound of theta 
     //! \returns The new proposed theta
     //!
     Eigen::VectorXd adaptiveGaussianProposal(const Eigen::VectorXd &state, double sigma, 
-        const Eigen::MatrixXd& qcov, const Eigen::VectorXd& min, const Eigen::VectorXd& max)
+        const Eigen::MatrixXd& qcovL, const Eigen::VectorXd& min, const Eigen::VectorXd& max)
     {
       // Random number generators
       static std::random_device rd;
@@ -105,23 +105,29 @@ namespace stateline
     //!
     //! \param state The current state of the chain
     //! \param sigma Scaling parameter (step size) to apply to chain covariance
-    //! \param qcov Covariance of a multivariate Gaussian with ~unit diagonal
+    //! \param qcovL Cholesky factor of the covariance of a multivariate Gaussian
     //! \returns The new proposed theta
     //!
 
     Eigen::VectorXd multiGaussianProposal(
-        const Eigen::VectorXd &state, double sigma, const Eigen::MatrixXd& qcov)
+        const Eigen::VectorXd &state, double sigma, const Eigen::MatrixXd& qcovL)
     {
       // Random number generators
       static std::random_device rd;
       static std::mt19937 generator(rd());
       static std::normal_distribution<> rand; // Standard normal
 
-      // Draw from a multivariate Gaussian
+      // Draw from a multivariate Gaussian scaled to unit determinant
+      uint nDims = qcovL.rows();
       Eigen::VectorXd zero_mean = 0.0*state;
-      obsidian::distrib::MultiGaussian q(zero_mean, qcov);
-      Eigen::VectorXd drawnvec = obsidian::distrib::drawValues(q, generator);
-      Eigen::VectorXd myprop = state + sigma*drawnvec;
+      double logdetq = qcovL.diagonal().array().log().sum();
+      double iScale = exp(-logdetq / nDims);
+      VLOG(2) << "logdetq = " << logdetq << ", iScale = " << iScale;
+
+      Eigen::VectorXd randnDraws(nDims);
+      for (uint i = 0; i < nDims; i++)
+        randnDraws(i) = rand(generator);
+      Eigen::VectorXd myprop = state + sigma * iScale * qcovL * randnDraws;
       return myprop;
     };
 

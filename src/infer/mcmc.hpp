@@ -64,7 +64,7 @@ namespace stateline
             lowestEnergies_(s.stacks * s.chains),
             SX_(s.stacks * s.chains),
             SX2_(s.stacks * s.chains),
-            qcov_(s.stacks * s.chains),
+            qcovL_(s.stacks * s.chains),
             s_(s),
             recover_(d.recover),
             numOutstandingJobs_(0),
@@ -133,7 +133,7 @@ namespace stateline
         {
           SX_[i] = Eigen::VectorXd::Zero(stateDim);
           SX2_[i] = Eigen::MatrixXd::Zero(stateDim, stateDim);
-          qcov_[i] = Eigen::MatrixXd::Identity(stateDim, stateDim);
+          qcovL_[i] = Eigen::MatrixXd::Identity(stateDim, stateDim);
         }
 
         // Listen for replies. As soon as a new state comes back,
@@ -361,17 +361,6 @@ namespace stateline
       return (n < 2) ? eid : (SX2_[id] - SX_[id]*SX_[id].transpose()/n)/(n-1) + eid;
     }
 
-    //! RS 2018/08/10:  Get the adaptive Metropolis proposal covariance,
-    //! a weighted sum of the current chain covariance and an isotropic
-    //! Gaussian (i.e. random walk).
-    //!
-    //! \return A const reference to the covariance matrix.
-    //!
-    const Eigen::MatrixXd &adaptive_qcov(uint id) const
-    {
-      return qcov_[id];
-    }
-
   private:
 
     //! Initialise the sampler.
@@ -415,14 +404,12 @@ namespace stateline
       //! to the AM proposal function if we've got at least some target
       //! number of samples in this chain.
       int stateDim = chains_.lastState(id).sample.size();
-      Eigen::MatrixXd qcov = (s_.adaptAMLength <= 0)
-          ? Eigen::MatrixXd::Identity(stateDim, stateDim) : qcov_[id];
-      if (qcov.rows() == 0)
+      if (qcovL_[id].rows() == 0)
       {
         VLOG(2) << "qcov = NULL; reverting to I(" << stateDim << "," << stateDim << ")";
-        qcov = Eigen::MatrixXd::Identity(stateDim, stateDim);
+        qcovL_[id] = Eigen::MatrixXd::Identity(stateDim, stateDim);
       }
-      propStates_.row(id) = propFn(chains_.lastState(id).sample, chains_.sigma(id), qcov);
+      propStates_.row(id) = propFn(chains_.lastState(id).sample, chains_.sigma(id), qcovL_[id]);
       policy.submit(id, propStates_.row(id));
       numOutstandingJobs_++;
     }
@@ -535,17 +522,15 @@ namespace stateline
 
       // Build *correlation* (whitened covariance) matrix of chain
       uint amL = s_.adaptAMLength;
-      // Eigen::MatrixXd chaincov_id = chaincov(id);
-      // Eigen::VectorXd chainscale_id = chaincov_id.diagonal().cwiseSqrt();
-      // double chainscale_mu = chainscale_id.sum()/chainscale_id.size();
-      // qcov_[id] = chaincov_id.cwiseQuotient(chainscale_id * chainscale_id.transpose());
-      // Actually we want to use covariance matrix, thetas already whitened
-      qcov_[id] = chaincov(id);
+      if (n > 0 && n % amL == 0)
+      {
+        int stateDim = Xk.size();
+        qcovL_[id] = (n*chaincov(id) + amL*Eigen::MatrixXd::Identity(stateDim, stateDim)) / (1.0*(n + amL));
+        qcovL_[id] = qcovL_[id].llt().matrixL();
+      }
 
       // Regularize with round Gaussian so that the proposal transitions
       // smoothly from isotropic MHRW as it gains samples
-      int stateDim = Xk.size();
-      qcov_[id] = (n*qcov_[id] + amL*Eigen::MatrixXd::Identity(stateDim, stateDim)) / (1.0*(n + amL));
       VLOG(3) << "done updating chainsums";
     }
 
@@ -638,7 +623,8 @@ namespace stateline
     std::vector<Eigen::MatrixXd> SX2_;
 
     // RS 2018/08/10:  Adaptive multivariate MHRW proposal covariance.
-    std::vector<Eigen::MatrixXd> qcov_;
+    // RS 2018/08/23:  Now represented by its Cholesky factor.
+    std::vector<Eigen::MatrixXd> qcovL_;
 
     // The MCMC settings
     MCMCSettings s_;
