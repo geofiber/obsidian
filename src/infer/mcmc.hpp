@@ -105,8 +105,8 @@ namespace stateline
         using namespace std::chrono;
 
         // Used for publishing statistics to visualisation server.
-        zmq::socket_t publisher(context_, ZMQ_PUB);
-        publisher.bind("tcp://*:5556");
+        //zmq::socket_t publisher(context_, ZMQ_PUB);
+        //publisher.bind("tcp://*:5556");
 
         // Record the starting time of the MCMC
         steady_clock::time_point startTime = steady_clock::now();
@@ -256,7 +256,7 @@ namespace stateline
             }
 
             // Quick and dirty way to get the data to the visualisation server
-            comms::sendString(publisher, s.str());
+            //comms::sendString(publisher, s.str());
 
             if (duration_cast<milliseconds>(steady_clock::now() - lastPrintTime).count() > 500)
             {
