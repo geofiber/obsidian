@@ -105,8 +105,10 @@ namespace stateline
         using namespace std::chrono;
 
         // Used for publishing statistics to visualisation server.
-        zmq::socket_t publisher(context_, ZMQ_PUB);
-        publisher.bind("tcp://*:5556");
+        // RS 2018/09/12:  Since we're not using such a server, comment out
+        // to enable us to run multiple simulations at once.
+        // zmq::socket_t publisher(context_, ZMQ_PUB);
+        // publisher.bind("tcp://*:5556");
 
         // Record the starting time of the MCMC
         steady_clock::time_point startTime = steady_clock::now();
@@ -170,7 +172,7 @@ namespace stateline
 	      double proposalDensity = propPdfFn(propStates_.row(id), sigmas_[id]);
 	      double lastsampleDensity = propPdfFn(chains_.lastState(id).sample, sigmas_[id]);
 	      double logDensityRatio = proposalDensity - lastsampleDensity;
-          VLOG(2) << "logDensityRatio = " << logDensityRatio;
+          VLOG(3) << "logDensityRatio = " << logDensityRatio;
           State propState { propStates_.row(id), energy, logDensityRatio, chains_.beta(id), false, SwapType::NoAttempt };
           bool propAccepted = chains_.append(id, propState);
           lengths_[id] += 1;
@@ -256,7 +258,7 @@ namespace stateline
             }
 
             // Quick and dirty way to get the data to the visualisation server
-            comms::sendString(publisher, s.str());
+            // comms::sendString(publisher, s.str());
 
             if (duration_cast<milliseconds>(steady_clock::now() - lastPrintTime).count() > 500)
             {

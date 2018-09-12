@@ -122,7 +122,7 @@ namespace stateline
       Eigen::VectorXd zero_mean = 0.0*state;
       double logdetq = qcovL.diagonal().array().log().sum();
       double iScale = exp(-logdetq / nDims);
-      VLOG(2) << "logdetq = " << logdetq << ", iScale = " << iScale;
+      VLOG(4) << "logdetq = " << logdetq << ", iScale = " << iScale;
 
       Eigen::VectorXd randnDraws(nDims);
       for (uint i = 0; i < nDims; i++)
