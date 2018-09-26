@@ -20,7 +20,9 @@ namespace obsidian
       FieldObsSpecProtobuf pb;
       pb.set_numlocations(g.locations.rows());
       pb.set_locations(matrixString(g.locations));
-      pb.set_noiseprob(g.noiseProb);
+      NoiseSpecProtobuf* npb = pb.mutable_noise();
+      npb->set_inversegammaalpha(g.noise.inverseGammaAlpha);
+      npb->set_inversegammabeta(g.noise.inverseGammaBeta);
       return protobufToString(pb);
     }
 
@@ -28,9 +30,9 @@ namespace obsidian
     {
       FieldObsSpecProtobuf pb;
       pb.ParseFromString(s);
-
       g.locations = stringMatrix(pb.locations(), pb.numlocations());
-      g.noiseProb = pb.noiseprob();
+      g.noise.inverseGammaAlpha = pb.noise().inversegammaalpha();
+      g.noise.inverseGammaBeta = pb.noise().inversegammabeta();
     }
     std::string serialise(const FieldObsParams& g)
     {

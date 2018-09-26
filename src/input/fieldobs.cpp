@@ -26,7 +26,8 @@ namespace obsidian
     ("fieldobs.enabled", po::value<bool>(), "enable sensor") //
     ("fieldobs.sensorLocations", po::value<std::string>(), "sensor locations") //
     ("fieldobs.sensorReadings", po::value<std::string>(), "sensor readings") //
-    ("fieldobs.noiseProb", po::value<double>(), "noise probability that field obs is wrong"); //
+    ("fieldobs.noiseAlpha", po::value<double>(), "noise BB alpha variable") //
+    ("fieldobs.noiseBeta", po::value<double>(), "noise BB beta variable"); //
   }
 
   template<>
@@ -37,7 +38,8 @@ namespace obsidian
     {
       std::vector<std::vector<std::string>> data = io::csv::readRaw(vm["fieldobs.sensorLocations"].as<std::string>());
       spec.locations = readFixed<double, 2, 0>(data);
-      spec.noiseProb = vm["fieldobs.noiseProb"].as<double>();
+      spec.noise.inverseGammaAlpha = vm["fieldobs.noiseAlpha"].as<double>();
+      spec.noise.inverseGammaBeta = vm["fieldobs.noiseBeta"].as<double>();
     }
     return spec;
   }
@@ -51,7 +53,8 @@ namespace obsidian
 
     return build_vm(po::variables_map(), od, "fieldobs",
                     { { "sensorLocations", prefix + "sensorLocations.csv" },
-                      { "noiseProb", io::to_string(spec.noiseProb) } });
+                      { "noiseAlpha", io::to_string(spec.noise.inverseGammaAlpha) },
+                      { "noiseBeta", io::to_string(spec.noise.inverseGammaBeta) } });
   }
 
   //! @note the sensor params don't actually have anything in them at the moment so we don't need to do any parsing
@@ -114,9 +117,9 @@ namespace obsidian
         valid = false;
       }
     }
-    if (spec.noiseProb <= 0 || spec.noiseProb >= 1)
+    if (spec.noise.inverseGammaAlpha <= 0 || spec.noise.inverseGammaBeta <= 0)
     {
-      LOG(ERROR)<< "input: field observation noise probability must be between 0 and 1";
+      LOG(ERROR)<< "input: field observation noise parameters must be greater than 0";
       valid = false;
     }
     if (static_cast<uint>(spec.locations.rows()) != result.readings.size())

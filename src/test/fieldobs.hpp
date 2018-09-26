@@ -18,7 +18,7 @@ namespace obsidian
 
   bool operator==(const FieldObsSpec& g, const FieldObsSpec& p)
   {
-    return (g.locations == p.locations) && (g.noiseProb == p.noiseProb);
+    return (g.locations == p.locations) && (g.noise == p.noise);
   }
 
   bool operator==(const FieldObsParams& g, const FieldObsParams& p)
@@ -34,7 +34,7 @@ namespace obsidian
   inline std::ostream& operator<<(std::ostream& os, const FieldObsSpec& spec)
   {
     os << "Field Observation SPEC" << "  LOCATIONS : " << spec.locations << " NOISE "
-        << spec.noiseProb << std::endl;
+        << spec.noise << std::endl;
     return os;
   }
 
@@ -52,7 +52,7 @@ namespace obsidian
     {
       FieldObsSpec spec;
       spec.locations = testing::randomMatrix(l, 2);
-      spec.noiseProb = testing::randomDouble();
+      spec.noise = testing::randomNoise();
       test(spec);
     }
   }

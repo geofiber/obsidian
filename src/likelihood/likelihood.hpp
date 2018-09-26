@@ -35,6 +35,15 @@ namespace obsidian
     //!
     double normalInverseGamma(const Eigen::VectorXd &real, const Eigen::VectorXd &candidate, double A, double B);
 
+    //!
+    //! Calculate the beta Binomial marginal log likelihood
+    //! 
+    //! \param real Vector containing the real sensor data
+    //! \param candidate Vector containing the simulated sensor data
+    //! \param A, B Alpha and beta parameters
+    //!
+    double betaBinomial(const Eigen::VectorXd &real, const Eigen::VectorXd &candidate, double A, double B);
+
     template<ForwardModel f>
     double likelihood(const typename Types<f>::Results& synthetic, const typename Types<f>::Results& real,
                       const typename Types<f>::Spec& spec);

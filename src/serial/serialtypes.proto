@@ -202,7 +202,7 @@ message FieldObsSpecProtobuf
 {
   required uint64 numLocations = 1;
   required bytes locations = 2;
-  required double noiseProb = 3;
+  required NoiseSpecProtobuf noise = 3;
 }
 
 message FieldObsParamsProtobuf
