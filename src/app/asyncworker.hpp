@@ -49,7 +49,15 @@ namespace obsidian
       if (params.returnSensorData)
         result = synthetic;
       result.likelihood = lh::likelihood<f>(synthetic, real, spec);
-      CHECK(!std::isnan(result.likelihood)) << f << " numerical error";
+      // RS 2018/09/13:  let's work on the assumption that if a choice of
+      // parameters results in NaN, it's a bad set of parameters and we should
+      // reject the proposal (see stateline::mcmc::acceptProposal()).
+      // CHECK(!std::isnan(result.likelihood)) << f << " numerical error";
+      if (std::isnan(result.likelihood))
+      {
+        VLOG(2) << "warning:  " << f << "numerical error (fwd model == nan)";
+        VLOG(2) << "this proposal will be rejected!";
+      }
       // Submit the results
       // Use a uint for the job ID
       minion.submitResult( { (uint) f, comms::serialise(result) });
