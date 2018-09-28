@@ -239,7 +239,9 @@ namespace stateline
           }
 
           // Update the accept and swap rates
-          if (duration_cast<milliseconds>(steady_clock::now() - lastLogTime).count() > 50)
+          // RS 2018/09/18:  now writes out every 2 sec (instead of 50 msec),
+          // to keep log files manageable
+          if (duration_cast<milliseconds>(steady_clock::now() - lastLogTime).count() > 2000)
           {
             lastLogTime = steady_clock::now();
 
@@ -260,7 +262,7 @@ namespace stateline
             // Quick and dirty way to get the data to the visualisation server
             // comms::sendString(publisher, s.str());
 
-            if (duration_cast<milliseconds>(steady_clock::now() - lastPrintTime).count() > 500)
+            if (duration_cast<milliseconds>(steady_clock::now() - lastPrintTime).count() > 2000)
             {
               lastPrintTime = steady_clock::now();
 
