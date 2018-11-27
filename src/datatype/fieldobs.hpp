@@ -32,7 +32,7 @@ namespace obsidian
     Eigen::MatrixXd locations;
 
     // Noise
-    double noiseProb;
+    NoiseSpec noise;
   };
 
   struct FieldObsCache

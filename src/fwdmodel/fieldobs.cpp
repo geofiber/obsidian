@@ -54,12 +54,12 @@ namespace obsidian
         // Count down through the layers.  The transition boundaries are lower
         // limits for the rock layers, so the sensor result will be the
         // smallest positive depth.
-        results.readings[location] = 0;
-        for (int layer = 0; layer < transitions.rows(); layer++)
+        results.readings[location] = transitions.rows() - 1;
+        for (int layer = 1; layer < transitions.rows(); layer++)
         {
           if (transitions(layer, location) > transitions(0, location))
           {
-            results.readings[location] = layer;
+            results.readings[location] = layer - 1;
             break;
           }
         }

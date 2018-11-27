@@ -29,6 +29,7 @@ namespace obsidian
         "mcmc.cacheLength", po::value<uint>(), "Total chain length before adaption stops")(
 	"proposal.distribution", po::value<std::string>(), "proposal distribution")(
 	"proposal.ro", po::value<double>(), "proposal ro")(
+	"proposal.adaptAMLength", po::value<uint>(), "interval over which covariance is adapted")(
 	"proposal.initialSigma", po::value<double>(), "initial proposal standard deviation")(
         "proposal.initialSigmaFactor", po::value<double>(), "initial proposal standard deviation")(
 	"proposal.maxFactor", po::value<double>(), "maximum adaption factor")(
@@ -56,6 +57,7 @@ namespace obsidian
   s.proposalAdaptInterval = vm["proposal.adaptInterval"].as<uint>();
   s.distribution = vm["proposal.distribution"].as<std::string>();
   s.ro = vm["proposal.ro"].as<double>();
+  s.adaptAMLength = vm["proposal.adaptAMLength"].as<uint>();
   s.betaOptimalSwapRate = vm["mcmc.betaOptimalSwapRate"].as<double>();
   s.betaAdaptRate = vm["mcmc.betaAdaptRate"].as<double>();
   s.betaMinFactor = vm["mcmc.betaMinFactor"].as<double>();

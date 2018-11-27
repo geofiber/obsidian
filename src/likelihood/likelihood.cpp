@@ -49,6 +49,23 @@ namespace obsidian
       return (-(A + 0.5) * (B + 0.5 * delta.array().square()).log() + norm).sum();
     }
 
+    double betaBinomial(const Eigen::VectorXd &real, const Eigen::VectorXd &candidate, double A, double B)
+    {
+      int n = real.size();
+      // RS 2018/09/28: fixing wrong answer here; we want k to be the number
+      // of successfully predicted forward model observations
+      // int k = n - (real - candidate).sum();
+      // RS 2018/10/03: exclude -1 ("unknown formation") observations since
+      // these can't possibly be correctly predicted
+      int k = 0;
+          for (int i = 0; i < n; i++) 
+              if (real[i] == -1) { n--; }
+              else if (real[i] == candidate[i]) { k++; }
+      return std::lgamma(n+1) - std::lgamma(k+1) - std::lgamma(n-k+1)
+           + std::lgamma(k+A) + std::lgamma(n-k+B) - std::lgamma(n+A+B)
+           + std::lgamma(A+B) - std::lgamma(A) - std::lgamma(B);
+    }
+
     template<>
     double likelihood<ForwardModel::GRAVITY>(const GravResults& synthetic, const GravResults& real, const GravSpec& spec)
     {
@@ -198,20 +215,10 @@ namespace obsidian
       if (real.readings.size() == 0)
         return 0.0;
 
-      // RS 2018/03/23:  For now let's just assume that each observation
-      // takes a categorical value (a layer index) and has some constant,
-      // independent probability of being wrong for each point (say, 5%).
-      // We can revisit these assumptions when we have a working version.
-      double l = 0;
-      double p = spec.noiseProb;
-      double lnp = std::log(p);
-      double ln1mp = std::log(1.0 - p);
-      for (uint i = 0; i < synthetic.readings.size(); i++)
-      {
-        double t = ((real.readings[i] == synthetic.readings[i]) ? ln1mp : lnp);
-        l += t;
-        VLOG(3) << "Field Observation Reading " << i << " likelihood:" << t;
-      }
+      // RS 2018/09/26:  Use a beta function prior for the probability of a
+      // field observation being wrong; it has an alpha and beta much like
+      // the other noise priors.
+      double l = lh::betaBinomial(synthetic.readings, real.readings, spec.noise.inverseGammaAlpha, spec.noise.inverseGammaBeta);
       VLOG(2) << "Field Observation Likelihood: " << l;
       return l;
     }

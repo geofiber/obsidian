@@ -141,16 +141,18 @@ int main(int ac, char* av[])
   LOG(INFO) << "initial samples generated";
   if (mcmcSettings.distribution.compare("Normal") == 0) {
 	  LOG(INFO) << "normal proposal";
-	  double (*pFn)(const Eigen::VectorXd&, const double, 
-		const Eigen::VectorXd&, const Eigen::VectorXd&) = &mcmc::gaussianProposalPDF;
-	  auto proposalPDF = std::bind(
-	  	pFn, 
-		ph::_1, ph::_2, 
-	  	prior.world.thetaMinBound(), prior.world.thetaMaxBound()
-	  );
+	  // RS 2018/08/23: Normal proposal is symmetric, so save some CPU
+	  // double (*pFn)(const Eigen::VectorXd&, const double, 
+	  // const Eigen::VectorXd&, const Eigen::VectorXd&) = &mcmc::gaussianProposalPDF;
+	  // auto proposalPDF = std::bind(
+	  // 	pFn, 
+	  // 	ph::_1, ph::_2,
+	  //  	prior.world.thetaMinBound(), prior.world.thetaMaxBound()
+	  // );
+	  auto proposalPDF = [=](const Eigen::VectorXd& theta, const double sigma){return 1.0;};
 	  auto proposal = std::bind(
 	  	&mcmc::adaptiveGaussianProposal,
-		ph::_1, ph::_2,
+		ph::_1, ph::_2, ph::_3,
 		prior.world.thetaMinBound(), prior.world.thetaMaxBound()
 	  );
 	  mcmc.run(policy, initialThetas, proposal, proposalPDF, mcmcSettings.wallTime);
@@ -159,8 +161,16 @@ int main(int ac, char* av[])
 	  auto proposalPDF = [=](const Eigen::VectorXd& theta, const double sigma){return prior.evaluate(theta);};
 	  auto proposal = std::bind(
 	  	&mcmc::crankNicolsonProposal, 
-		ph::_1, ph::_2,
-		mcmcSettings.ro, prior
+		ph::_1, ph::_2, ph::_3, prior
+	  );
+	  mcmc.run(policy, initialThetas, proposal, proposalPDF, mcmcSettings.wallTime);
+  } else if (mcmcSettings.distribution.compare("AdaptiveMulti") == 0) {
+	  LOG(INFO) << "adaptive multigaussian proposal";
+	  // RS 2018/08/23: AdaptiveMulti proposal is symmetric, so save some CPU
+	  auto proposalPDF = [=](const Eigen::VectorXd& theta, const double sigma){return 1.0;};
+	  auto proposal = std::bind(
+	  	&mcmc::multiGaussianProposal,
+		ph::_1, ph::_2, ph::_3
 	  );
 	  mcmc.run(policy, initialThetas, proposal, proposalPDF, mcmcSettings.wallTime);
   } else {
