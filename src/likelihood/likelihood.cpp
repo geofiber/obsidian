@@ -55,9 +55,12 @@ namespace obsidian
       // RS 2018/09/28: fixing wrong answer here; we want k to be the number
       // of successfully predicted forward model observations
       // int k = n - (real - candidate).sum();
+      // RS 2018/10/03: exclude -1 ("unknown formation") observations since
+      // these can't possibly be correctly predicted
       int k = 0;
           for (int i = 0; i < n; i++) 
-              if (real[i] == candidate[i]) { k++; }
+              if (real[i] == -1) { n--; }
+              else if (real[i] == candidate[i]) { k++; }
       return std::lgamma(n+1) - std::lgamma(k+1) - std::lgamma(n-k+1)
            + std::lgamma(k+A) + std::lgamma(n-k+B) - std::lgamma(n+A+B)
            + std::lgamma(A+B) - std::lgamma(A) - std::lgamma(B);
