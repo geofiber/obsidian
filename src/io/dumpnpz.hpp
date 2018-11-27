@@ -15,6 +15,7 @@
 #include "world/transitions.hpp"
 #include "world/voxelise.hpp"
 #include "io/npy.hpp"
+#include <glog/logging.h>
 
 namespace obsidian
 {
@@ -100,6 +101,9 @@ namespace obsidian
       mtReadings.push_back(stateMt);
       fieldReadings.row(i) = results[i].field.readings;
     }
+    // RS:  For some reason we've been getting endless seg faults when
+    // trying to write out MT forward models.  We're still trying to fix
+    // this but for the time being, suppress MT forward model output.
     /*
     Eigen::MatrixXcd mtReadingMatrix = Eigen::MatrixXcd::Zero(size, nMt * maxFreqs * 4);
     for (uint i = 0; i < size; i++)
@@ -107,8 +111,12 @@ namespace obsidian
       uint c = 0;
       for (uint f = 0; f < mtReadings[i].size(); f++)
       {
-        // uint s = mtReadings[i][f].size();
-        mtReadingMatrix.block(i, c, 1, maxFreqs) = mtReadings[i][f];
+        uint s = mtReadings[i][f].size();
+	LOG(INFO)<< "mtReadings s: " << s;
+	LOG(INFO)<< "block arg i: " << i;
+	LOG(INFO)<< "block arg c: " << c;
+	LOG(INFO)<< "block arg maxFreqs: " << maxFreqs;
+        mtReadingMatrix.block(i, c, 1, s) = mtReadings[i][f];
         c += maxFreqs;
       }
     }
