@@ -1,9 +1,6 @@
 Obsidian
 ========
 
-WARNING: This repository is no longer being maintained. 
-=======================================================
-
 Obsidian is a set of tools designed to perform probabilistic inference with
 geophysical sensor data to produce models of the sub-surface. It is written
 primarily in C++ and runs on GNU/Linux and Unix operating systems.
@@ -24,7 +21,13 @@ Contact Us
 ----------
 Please feel free to contact the developers at NICTA if you have questions
 about building, running or interpreting results from Obsidian. Best to email
-lachlan.mccalman@nicta.com.au.
+Lachlan McCalman (lachlan.mccalman@nicta.com.au).
+
+This fork of the repository also contains configuration and sensor data files for
+recent geophysical inversion papers written using Obsidian (see "Literature" below).
+These configurations are meant to be self-contained and can be run to reproduce the
+plots and behavior in the papers in which they appear.  For more information,
+email Richard Scalzo (richard.scalzo@sydney.edu.au) or David Kohn (david.kohn@sydney.edu.au).
 
 System Support
 --------------
@@ -71,6 +74,24 @@ There is doxygen documentaion available
 just run
 `make doc`
 
+Literature
+----------
+* Original Obsidian methods paper:
+  [McCalman et al. 2014](https://www.researchgate.net/publication/262766799),
+  "Distributed Bayesian Geophysical Inversions."
+  Proceedings of the Thirty-Ninth Workshop on Geothermal Reservoir Engineering,
+  Stanford University, Stanford, California, February 24-26, 2014.
+* Original application to the Moomba gas field:
+  [Beardsmore et al. 2016](https://www.researchgate.net/publication/314272010_A_Bayesian_Inference_Tool_for_Geophysical_Joint_Inversions)
+  "A Bayesian inference tool for geophysical joint inversions."
+  ASEG Extended Abstracts, 2016, 1–10, 2016.
+* Model development paper exploring sampler behavior, prior + likelihood sensitivity:
+  [Scalzo et al. 2018](),
+  "Efficiency and robustness in Monte Carlo sampling of 3-D
+   geophysical inversions with Obsidian v0.1.2: Setting up for success."
+  **Submitted to Geoscientific Model Development, arXiv link pending.**
+  Configurations to reproduce runs found in `examples/scalzo18` subdirectory.
+
 Current Limitations
 -------------------
 * The ground surface is currently assumed to be flat.
@@ -90,7 +111,7 @@ cnpy can be found along with the license in the src/io directory.
 Bug Reports
 -----------
 If you find a bug, please open an
-[issue](http://github.com/NICTA/obsidian/issues).
+[issue](http://github.com/rscalzo/obsidian/issues).
 
 Contributing 
 ------------
